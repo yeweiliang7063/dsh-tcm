@@ -45,13 +45,13 @@ const rows = YAML.parseDocument(fs.readFileSync(path.join(PLUGIN, 'cordis.patch.
 const presetRow = rows.find((r) => r.id === 'preset-tcm')
 const presetPrefix = presetRow.config.plugins[0].config.prefix
 assert.ok(presetPrefix.trimStart().startsWith('{{tcm_gear_guard}}'), '预设提示词应以常驻口径变量开头')
-for (const keyword of ['不给具体剂量', '不出处方笺', '针灸只给推荐穴位', '不写进针深浅', '五段']) {
+for (const keyword of ['不给具体剂量', '不出处方笺', '针灸只给推荐穴位', '不写进针深浅', '配伍禁忌必说', '药典用量警示必说', '复杂病症分主次必说']) {
   assert.ok(presetPrefix.includes(keyword), `预设口径缺「${keyword}」`)
 }
 const config = presetRow.config
 const presetText = JSON.stringify(presetRow.config.plugins[0].config.prefix)
 assert.ok(!presetText.includes('"11. '), '问诊参考结构里不应再有第 11 问')
-assert.ok(presetText.includes('按五段作答'), '出方格式应为五段')
+assert.ok(presetText.includes('按学理模式七段作答'), '出方格式应为学理模式七段')
 
 // ── 起一个临时资料库 ──
 const kbDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tcm-simulate-kb-'))

@@ -79,7 +79,7 @@ if (!isLocalOnly) chk('有发布信息（private 未设时才有 publishConfig�
 const gear = fs.readFileSync(path.join(PLUGIN, 'lib', 'gear.js'), 'utf8');
 for (const m of ['GEAR_GUARD', 'GEAR_BLOCK_NOTICE', 'MINIMAL_PREFIX', 'PRESET_DESCRIPTION', 'GEAR_GUARD_VAR', 'GEAR_MARK', 'KB_PATH_VAR'])
   chk(`lib/gear.js 含「${m}」`, gear.includes(m));
-for (const m of ['仅供学习研究', '不给具体剂量', '不出处方笺', '针灸只给推荐穴位', '不写进针深浅', '按五段作答'])
+for (const m of ['仅供学习研究', '不给具体剂量', '不出处方笺', '针灸只给推荐穴位', '不写进针深浅', '按学理模式七段作答', '配伍禁忌必说', '药典用量警示必说', '复杂病症分主次必说'])
   chk(`口径锁含「${m}」`, gear.includes(m));
 chk('口径锁本身不含剂量示例', gear.includes("'2. 不给具体剂量：不写任何克数") && !/一两折多少克/.test(gear));
 
@@ -130,7 +130,7 @@ for (const m of ['不给具体剂量', '不出处方笺', '针灸只给推荐穴
 chk('persona 仍带资料库变量', prefix.includes('{{tcm_kb_path}}'));
 chk('问诊参考结构无第 11 项', !prefix.includes('"11. '));
 chk('问诊只问脉证', prefix.includes('问诊只问脉证'));
-chk('出方格式为五段，不再分详略档', prefix.includes('全文不用七段式，按五段作答') && !prefix.includes('详略只调'));
+chk('出方格式为学理模式七段，不再分详略档', prefix.includes('按学理模式七段作答') && !prefix.includes('详略只调'));
 
 // ---------- 7. profile 注册 ----------
 const prof = JSON.parse(fs.readFileSync(path.join(PROFILE, 'package.json'), 'utf8'));

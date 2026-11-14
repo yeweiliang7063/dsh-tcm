@@ -1,6 +1,6 @@
 {
   "name": "dsh-tcm",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "DeepSeek Harness（DSH）中医预设「岐黄经方」：仅供学习研究使用——只给辨证思路，不给具体剂量，不出处方笺，针灸只给推荐穴位；自带资料库索引与会话归档。",
   "type": "module",
   "main": "lib/index.js",
