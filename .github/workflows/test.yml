@@ -1,5 +1,5 @@
 # 三系统测试机：每次推送、每次提 PR 自动在 Windows / macOS / Linux 上各跑一遍
-# 三件事：单元测试、配置自检、真装一遍（装进临时 profile，不碰真实 ~/.dsh）
+# 三件事，按顺序：单元测试 → 真装一遍 → 配置自检（自检要看安装结果，必须排在装之后）
 name: 三系统测试
 
 on:
@@ -27,11 +27,8 @@ jobs:
       - name: 单元测试
         run: npm test
 
-      - name: 配置自检
-        run: node verify-preset.mjs
-
-      # 真装一遍：造一个空的 DSH profile，把插件装进去，再核对登记项与链接。
-      # 走的是和用户双击后敲 node install.mjs 完全相同的代码路径。
+      # 真装一遍：造一个空的 DSH profile，把插件装进去。
+      # 走的是和用户解压后敲 node install.mjs 完全相同的代码路径（含装完自带的那遍自检）。
       - name: 真装一遍（Windows）
         if: runner.os == 'Windows'
         shell: pwsh
@@ -50,3 +47,19 @@ jobs:
           mkdir -p "$profile"
           echo '{"name":"fake-profile","private":true}' > "$profile/package.json"
           node install.mjs --profile "$profile"
+
+      # 自检要检查「装好了没、登记对不对」，必须放在真装之后；
+      # 指定 TCM_PROFILE 指向刚装的那个临时 profile，不去猜用户本机的。
+      - name: 配置自检（Windows）
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          TCM_PROFILE: ${{ runner.temp }}\fake-profile
+        run: node verify-preset.mjs
+
+      - name: 配置自检（macOS / Linux）
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          TCM_PROFILE: ${{ runner.temp }}/fake-profile
+        run: node verify-preset.mjs
