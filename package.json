@@ -1,0 +1,85 @@
+{
+  "name": "dsh-tcm",
+  "version": "2.1.0",
+  "description": "DeepSeek Harness（DSH）中医预设「岐黄经方」：仅供学习研究使用——只给辨证思路，不给具体剂量，不出处方笺，针灸只给推荐穴位；自带资料库索引与会话归档。",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./kb-index": "./lib/kb-index.js",
+    "./package.json": "./package.json",
+    "./platform": "./lib/platform.js"
+  },
+  "files": [
+    "lib/",
+    "!lib/*.bak",
+    "cordis.patch.yml",
+    "install.mjs",
+    "install.ps1",
+    "install.sh",
+    "verify-preset.mjs",
+    "README.md",
+    "LICENSE",
+    "corpus/",
+    "assets/",
+    "!**/*.bak-*",
+    "!*.bak-*"
+  ],
+  "scripts": {
+    "index": "node lib/build-index.mjs",
+    "verify": "node verify-preset.mjs",
+    "setup": "node install.mjs",
+    "test": "node --test test/platform.test.mjs test/kb-index.test.mjs test/corpus.test.mjs test/records.test.mjs test/book-text.test.mjs test/book-classify.test.mjs test/auto-file.test.mjs test/gear.test.mjs"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "preset",
+    "tcm",
+    "中医",
+    "经方",
+    "学习研究",
+    "辨证思路"
+  ],
+  "license": "MIT",
+  "author": "yeweiliang7063",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yeweiliang7063/dsh-tcm.git"
+  },
+  "homepage": "https://github.com/yeweiliang7063/dsh-tcm#readme",
+  "bugs": {
+    "url": "https://github.com/yeweiliang7063/dsh-tcm/issues"
+  },
+  "private": true,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "engines": {
+    "dsh": ">=0.2.2-rc.1"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-primitives"
+      ]
+    }
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.19.0",
+    "yaml": "^2.9.1"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/schemastery": "*"
+  }
+}

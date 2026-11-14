@@ -1,0 +1,17 @@
+# 依赖与本地文件不进仓库
+node_modules/
+*.bak
+*.bak-*
+.pnpm-store/
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 安装时生成的临时文件
+*.log
+*.tmp
+# 本机操作单，不进仓库
+发布到GitHub-操作单.md
