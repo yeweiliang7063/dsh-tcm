@@ -1,0 +1,68 @@
+name: 问题反馈
+description: 反馈插件问题或回答口径问题
+title: "[反馈] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。本插件只给辨证思路，不给具体剂量、不出处方笺、针灸只给穴位。
+  - type: input
+    id: dsh-version
+    attributes:
+      label: DSH 版本
+      description: 设置 → 关于 里能看到
+      placeholder: 例如 0.3.1
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: 操作系统
+      options:
+        - Windows 10
+        - Windows 11
+        - macOS
+        - Linux
+        - 其他
+    validations:
+      required: true
+  - type: textarea
+    id: asked
+    attributes:
+      label: 你说了什么
+      description: 原话
+      placeholder: 把你输入的原话贴在这里
+    validations:
+      required: true
+  - type: textarea
+    id: answered
+    attributes:
+      label: 插件答了什么
+      description: 贴关键片段
+      placeholder: 把回答里的关键片段贴在这里
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 你预期它答什么
+    validations:
+      required: false
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: false
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: 截图
+      description: 可以直接把图片拖进这里
+    validations:
+      required: false
