@@ -1,6 +1,6 @@
 {
   "name": "dsh-tcm",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": "DeepSeek Harness（DSH）中医预设「岐黄经方」：仅供学习研究使用——只给辨证思路，不给具体剂量，不出处方笺，针灸只给推荐穴位；自带资料库索引与会话归档。",
   "type": "module",
   "main": "lib/index.js",
@@ -30,7 +30,7 @@
     "index": "node lib/build-index.mjs",
     "verify": "node verify-preset.mjs",
     "setup": "node install.mjs",
-    "test": "node --test test/platform.test.mjs test/kb-index.test.mjs test/corpus.test.mjs test/records.test.mjs test/book-text.test.mjs test/book-classify.test.mjs test/auto-file.test.mjs test/gear.test.mjs"
+    "test": "node --test test/platform.test.mjs test/kb-index.test.mjs test/corpus.test.mjs test/records.test.mjs test/book-text.test.mjs test/book-classify.test.mjs test/auto-file.test.mjs test/gear.test.mjs test/stream.test.mjs"
   },
   "keywords": [
     "dsh",
