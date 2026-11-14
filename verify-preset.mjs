@@ -93,7 +93,8 @@ chk('lib/index.js 不再有挡位开关', !host.includes('currentLevel') && !hos
 
 // ---------- 4. 出口校验 ----------
 const guard = fs.readFileSync(path.join(PLUGIN, 'lib', 'dosage-guard.js'), 'utf8');
-for (const m of ['hasDosage', 'maskDosage', 'UNIT_WORD', 'LITER_WORD', 'ARTICLE_MARK'])
+// 2026-11-14：剂量守卫重写，UNIT_WORD / LITER_WORD 两个旧常量合并成 NUM / LATIN_UNIT
+for (const m of ['hasDosage', 'maskDosage', 'NUM', 'LATIN_UNIT', 'ARTICLE_MARK'])
   chk(`lib/dosage-guard.js 含「${m}」`, guard.includes(m));
 
 // ---------- 5. 客户端半语法 ----------
