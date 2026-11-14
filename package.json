@@ -16,8 +16,6 @@
     "!lib/*.bak",
     "cordis.patch.yml",
     "install.mjs",
-    "install.ps1",
-    "install.sh",
     "verify-preset.mjs",
     "README.md",
     "LICENSE",
