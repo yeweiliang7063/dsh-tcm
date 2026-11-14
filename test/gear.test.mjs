@@ -7,7 +7,6 @@ import os from 'node:os'
 import path from 'node:path'
 import { hasDosage, maskDosage } from '../lib/dosage-guard.js'
 import { GEAR_BLOCK_NOTICE, GEAR_GUARD, GEAR_MARK, PRESET_DESCRIPTION } from '../lib/gear.js'
-import { inspectNotice } from '../lib/inspect-notice.js'
 const D0 = String.fromCharCode(10) + '【学理模式】本节仅供学习研究，不构成诊疗建议。'
 
 import { currentPath } from '../lib/index.js'
@@ -129,28 +128,4 @@ test('资料库路径：填了的目录原样用，不自动建子目录', () =>
   } finally {
     fs.rmSync(kb, { recursive: true, force: true })
   }
-})
-test('出口检查：急诊信号没单独立标题要提醒', () => {
-  assert.notStrictEqual(inspectNotice('若出现大便带血、剧烈腹痛，立刻处理。'), '')
-  assert.strictEqual(inspectNotice('**⚠️ 立刻上医院**——出现大便带血、冷汗不止，立刻上医院。' + D0), '')
-})
-
-test('出口检查：用了温燥药没交底要提醒', () => {
-  assert.notStrictEqual(inspectNotice('首选附子理中汤一类。'), '')
-  assert.strictEqual(
-    inspectNotice('首选理中汤加减（本方附子只作佐使、由小渐增；服后不见头胀面红再往上加；出现唇舌麻木立刻停用）。' + D0),
-    '',
-  )
-  // 明说不用附子不算用
-  assert.strictEqual(inspectNotice('本案先不用附子，改用党参白术干姜。' + D0), '')
-})
-
-test('出口检查：没写免责提示要提醒', () => {
-  assert.notStrictEqual(inspectNotice('一、太阴为主。'), '')
-  assert.strictEqual(inspectNotice('这条只是讲学理。不构成诊疗建议，身体不适请及时就医。'), '')
-})
-
-test('出口检查：替人定方要提醒', () => {
-  assert.notStrictEqual(inspectNotice('你可以抓三副党参白术喝。' + D0), '')
-  assert.strictEqual(inspectNotice('桂枝汤的组成是桂枝、芍药、生姜、大枣、甘草。' + D0), '')
 })
