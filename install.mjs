@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 一键安装「岐黄经方（学习版）」中医预设（dsh-tcm）到本机 DSH
+// 一键安装「中医 · 经方（学习版）」中医预设（dsh-tcm）到本机 DSH
 //
 // 用法：
 //   node install.mjs                     用当前脚本所在目录作为插件来源
@@ -175,10 +175,15 @@ function verify(profile) {
 
 // ── 5. 资料库提示 ────────────────────────────────────────────────
 function checkKb(kb) {
-  // 中医会话查书、生成索引、归档医案都在这一个目录里。
+  // 中医会话查书、生成索引、归档医案都在这一个目录里。没配就什么都不做。
+  if (!kb) {
+    mark.info('资料库：还没配置（插件不再预设目录）')
+    mark.info('装好后到「设置 → 中医 · 经方」里填一个目录；没填之前不建索引、不归档、不补书。')
+    return
+  }
   if (!fs.existsSync(kb)) {
     mark.warn(`资料库目录还不存在：${kb}`)
-    mark.info('插件启动后按需创建，十部经典会自动补到 text/；也可以先执行 node lib/build-index.mjs <目录> 建索引。')
+    mark.info('插件启动后按需创建，随包经典会自动补到 text/；也可以先执行 node lib/build-index.mjs <目录> 建索引。')
     return
   }
   mark.ok(`资料库目录存在：${kb}`)
@@ -187,7 +192,7 @@ function checkKb(kb) {
 }
 
 // ── 主流程 ───────────────────────────────────────────────────────
-console.log('══ 中医预设「岐黄经方（学习版）」安装脚本 ══' + (DRY ? '（演练模式，不改任何文件）' : ''))
+console.log('══ 中医预设「中医 · 经方（学习版）」安装脚本 ══' + (DRY ? '（演练模式，不改任何文件）' : ''))
 
 const profile = findProfile(argValue('--profile', null))
 const kb = normalizeRoot(argValue('--kb', defaultKbPath()))
@@ -196,7 +201,7 @@ mark.step('目标环境')
 mark.info(`平台：${process.platform}（${process.arch}）`)
 mark.info(`profile：${profile}`)
 mark.info(`插件来源：${HERE}`)
-mark.info(`资料库：${kb}`)
+mark.info(`资料库：${kb || '未配置（插件不再预设目录）'}`)
 
 mark.step('安装插件')
 linkSource(profile)
@@ -226,6 +231,6 @@ if (ok && !DRY) {
 
 console.log('\n── 接下来 ─────────────────────────────────────')
 console.log('  1) 完全退出 DSH（不是关窗口，要从托盘退出），再重新打开')
-console.log('  2) 新建会话，在预设列表里选「中医 · 岐黄经方（学习版）」')
-console.log('  3) 设置 →「中医资料库 · 学理模式」，确认资料库目录')
+console.log('  2) 新建会话，在预设列表里选「中医 · 经方（学习版）」')
+console.log('  3) 设置 →「中医 · 经方」，确认资料库目录')
 console.log('\n✔ 安装完成' + (DRY ? '（演练，未改动）' : ''))

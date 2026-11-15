@@ -8,13 +8,14 @@ import path from 'node:path'
 import { ensureAssets, ensureCorpus } from '../lib/corpus.js'
 import { ensureCategoryDirs } from '../lib/kb-index.js'
 
-test('ensureCorpus：把十部经典补到 text/，第二次不重复复制', () => {
+test('ensureCorpus：把九部经典补到 text/，第二次不重复复制', () => {
   const kb = fs.mkdtempSync(path.join(os.tmpdir(), 'tcm-corpus-'))
   const first = ensureCorpus(kb)
-  assert.ok(first >= 10, `应至少复制 10 个文件，实际 ${first}`)
+  assert.ok(first >= 9, `应至少复制 9 个文件，实际 ${first}`)
   assert.ok(fs.existsSync(path.join(kb, 'text', '03-伤寒论.txt')))
   assert.ok(fs.existsSync(path.join(kb, 'text', '07-濒湖脉学.txt')))
-  assert.ok(fs.existsSync(path.join(kb, 'text', '10-神农本草经.txt')))
+  // 本草类书不随包，删掉后不该被补回来
+  assert.equal(fs.existsSync(path.join(kb, 'text', '10-神农本草经.txt')), false)
   assert.equal(ensureCorpus(kb), 0)
 })
 

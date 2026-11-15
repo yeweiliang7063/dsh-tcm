@@ -71,7 +71,7 @@ test('maskDosage：遮数字、留单位', () => {
 })
 
 test('口径文案：四类约束都写到了', () => {
-  for (const keyword of ['仅供学习研究', '不给具体剂量', '不出处方笺', '针灸只给推荐穴位', '不写进针深浅']) {
+  for (const keyword of ['仅供学习研究', '剂量：不自己给量', '不出处方笺', '针灸只给推荐穴位', '不写进针深浅']) {
     assert.ok(GEAR_GUARD.includes(keyword), `口径锁缺「${keyword}」`)
   }
   assert.ok(GEAR_GUARD.includes(GEAR_MARK))
@@ -83,15 +83,19 @@ test('口径文案：四类约束都写到了', () => {
   assert.equal(m, null, `口径锁里出现了现代剂量写法：${m && m[0]}`)
 })
 
-test('currentPath：默认取平台资料库目录，自定义路径原样用', () => {
+test('currentPath：没配置时返回空串，配置了原样用', () => {
   const expected = normalizeRoot(defaultKbPath())
-  assert.equal(currentPath({}), expected)
-  assert.equal(currentPath(undefined), expected)
+  assert.equal(expected, '', '插件不该再预设资料库目录')
+  assert.equal(currentPath({}), '')
+  assert.equal(currentPath(undefined), '')
   // 配成同一路径时算出来必须一样（不会自动套一层子目录）
-  assert.equal(currentPath({ kbPath: expected }), expected)
-  // 用户自定义的目录原样用
-  const custom = process.platform === 'win32' ? 'E:\\我的书' : '/tmp/我的书'
+  // 用户自定义的目录原样用（只认设置里那一个，而且它必须真在盘上）
+  const custom = fs.mkdtempSync(path.join(os.tmpdir(), 'tcm-kb-'))
   assert.equal(currentPath({ kbPath: custom }), normalizeRoot(custom))
+  // 填了但盘上不存在：当没配置，绝不去别处找替代目录
+  const ghost = path.join(custom, '不存在的子目录')
+  assert.equal(currentPath({ kbPath: ghost }), '')
+  fs.rmSync(custom, { recursive: true, force: true })
 })
 
 test('配置：只剩资料库路径与自动索引两项，没有挡位', async () => {
@@ -107,13 +111,13 @@ test('配置：只剩资料库路径与自动索引两项，没有挡位', async
   assert.ok(!refs.join('').includes('level'), '不应残留挡位配置')
 })
 
-test('minimalPreset：结构完整，persona 带学理模式口径', () => {
+test('minimalPreset：结构完整，persona 带经方学理口径', () => {
   const preset = minimalPreset('win32')
   assert.equal(preset.id, 'dsh-tcm')
   assert.ok(String(preset.description).startsWith('仅供学习研究使用'))
   const persona = preset.plugins.find((item) => item.id === 'persona')
   assert.ok(persona, '应有 persona 行')
-  assert.ok(String(persona.config.prefix).includes('学理模式'))
+  assert.ok(String(persona.config.prefix).includes(GEAR_MARK), 'persona 应带末尾固定声明')
   const bash = preset.plugins.find((item) => item.id === 'tool-bash')
   const pwsh = preset.plugins.find((item) => item.id === 'tool-pwsh')
   assert.equal(bash.disabled, true, 'Windows 上不开 bash')

@@ -75,6 +75,33 @@ test('conversationFromEvents：只收真人发言与助手正文，保持顺序'
   ])
 })
 
+test('conversationFromEvents：带图片的提问不能整条丢掉', () => {
+  const events = [
+    {
+      type: 'user/message',
+      seq: 1,
+      data: {
+        source: { kind: 'user' },
+        content: [
+          { type: 'image', attachment: { name: '处方.jpg' } },
+          { type: 'text', text: '点评这张方' },
+        ],
+      },
+    },
+    {
+      type: 'user/message',
+      seq: 2,
+      data: { source: { kind: 'user' }, content: [{ type: 'image', attachment: { name: '方.jpg' } }] },
+    },
+    assistantEvent('先看症状。', 3),
+  ]
+  assert.deepEqual(conversationFromEvents(events), [
+    { role: 'user', text: '[图片]\n点评这张方' },
+    { role: 'user', text: '[图片]' },
+    { role: 'assistant', text: '先看症状。' },
+  ])
+})
+
 test('recordSession：一个会话一份文件，文件名用标题，整段对话都写入', () => {
   const kb = fs.mkdtempSync(path.join(os.tmpdir(), 'qh-session-'))
   const sessionId = 'session-abcdef123456'
@@ -91,7 +118,7 @@ test('recordSession：一个会话一份文件，文件名用标题，整段对�
   assert.match(body, /会话: "session-abcdef123456"/)
   assert.match(body, /# 61岁\/高血压患者/)
   assert.match(body, /### 用户\n\n后脑勺疼。/)
-  assert.match(body, /### 岐黄经方\n\n请补脉证。/)
+  assert.match(body, /### 中医 · 经方\n\n请补脉证。/)
 
   const second = recordSession({ kb, sessionId, title: '61岁/高血压患者', events, now: new Date(at.getTime() + 1000), previousFile: first })
   assert.equal(second, first, '同一会话、同一标题应覆盖原文件')
@@ -148,7 +175,7 @@ test('createSessionRecorder：按当前预设归档整段会话，标题来自�
     snapshotEvents: () => events,
   }
   const otherSession = { id: 'session-ccccdddd', header: { agentPreset: 'cordis' } }
-  // 先以 cordis 创建、后来在空白会话里切到岐黄经方：header 仍是 cordis。
+  // 先以 cordis 创建、后来在空白会话里切到中医 · 经方：header 仍是 cordis。
   const switchedSession = {
     id: 'session-switched1',
     header: { agentPreset: 'cordis' },

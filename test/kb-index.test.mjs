@@ -54,17 +54,41 @@ test('buildIndexMarkdown：递归扫描，路径统一用 /', () => {
   assert.match(built.markdown, /`text\/针灸甲乙经\.txt`/)
   assert.match(built.markdown, /`医案\/某医案\.txt`/)
   assert.match(built.markdown, /`伤寒论\.txt`/)
-  assert.equal(built.files.length, 4)
+  assert.equal(built.files.length, 5)
 })
 
-test('buildIndexMarkdown：跳过 skills、node_modules、隐藏目录与索引本身', () => {
+test('buildIndexMarkdown：跳过 node_modules、隐藏目录与索引本身', () => {
   const root = makeTree()
   const built = buildIndexMarkdown(root)
   const rels = built.files.map((f) => f.rel).join('\n')
-  assert.doesNotMatch(rels, /skills\//)
   assert.doesNotMatch(rels, /node_modules\//)
   assert.doesNotMatch(rels, /\.hidden\//)
   assert.doesNotMatch(rels, /索引\.md/)
+})
+
+test('buildIndexMarkdown：规程目录单列一类，不漏登', () => {
+  const root = makeTree()
+  const built = buildIndexMarkdown(root)
+  const guides = (built.groups['规程'] || []).map((f) => f.rel)
+  assert.ok(guides.includes('skills/tcm-jingfang/SKILL.md'), '规程文件必须进索引')
+  assert.match(built.markdown, /## 规程/)
+})
+
+test('buildIndexMarkdown：备份副产物不登索引', () => {
+  const root = makeTree()
+  const put = (rel) => {
+    const file = path.join(root, rel)
+    fs.mkdirSync(path.dirname(file), { recursive: true })
+    fs.writeFileSync(file, '备份', 'utf8')
+  }
+  put('text/神农本草经.txt.bak-20261115-1558')
+  put('_回退备份-20261112/旧书.txt')
+  put('references/dosage.md')
+  const built = buildIndexMarkdown(root)
+  const rels = built.files.map((f) => f.rel).join('\n')
+  assert.doesNotMatch(rels, /\.bak-/, '备份文件不该进索引')
+  assert.doesNotMatch(rels, /_回退备份/, '回退备份目录不该进索引')
+  assert.match(rels, /references\/dosage\.md/, 'references 下的规程要进索引')
 })
 
 test('buildIndexMarkdown：大类按文件名归类', () => {

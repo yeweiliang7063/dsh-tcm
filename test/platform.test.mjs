@@ -24,17 +24,12 @@ const linux = {
   exists: () => false,
 }
 
-test('defaultKbPath：Windows 上有 D:\\中医知识库 就沿用', () => {
-  assert.equal(defaultKbPath(winLegacy), 'D:\\中医知识库')
-})
-
-test('defaultKbPath：Windows 上没有 D 盘老目录时用主目录', () => {
-  assert.equal(defaultKbPath(win), path.win32.join('C:\\Users\\张三', '中医知识库'))
-})
-
-test('defaultKbPath：macOS / Linux 用主目录下的 中医知识库', () => {
-  assert.equal(defaultKbPath(mac), '/Users/zhangsan/中医知识库')
-  assert.equal(defaultKbPath(linux), '/home/zhangsan/中医知识库')
+test('defaultKbPath：不预设资料库目录，任何平台都返回空串', () => {
+  assert.equal(defaultKbPath(), '')
+  assert.equal(defaultKbPath(winLegacy), '')
+  assert.equal(defaultKbPath(win), '')
+  assert.equal(defaultKbPath(mac), '')
+  assert.equal(defaultKbPath(linux), '')
 })
 
 test('expandHome：~、~/、~\\ 按平台展开', () => {

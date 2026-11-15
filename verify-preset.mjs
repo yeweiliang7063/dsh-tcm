@@ -63,6 +63,10 @@ const note = (name, pass, detail = '') => {
   if (!pass) warn++;
   out.push(`${pass ? 'PASS' : 'WARN'}  ${name}${detail ? ' | ' + detail : ''}`);
 };
+// 只做说明、不计入 WARN 的一行（比如「资料库还没配，跳过检查」）
+const info = (name, detail = '') => {
+  out.push(`INFO  ${name}${detail ? ' | ' + detail : ''}`);
+};
 
 // ---------- 1. 插件本体 ----------
 const pkg = JSON.parse(fs.readFileSync(path.join(PLUGIN, 'package.json'), 'utf8'));
@@ -79,13 +83,17 @@ if (!isLocalOnly) chk('有发布信息（private 未设时才有 publishConfig�
 const gear = fs.readFileSync(path.join(PLUGIN, 'lib', 'gear.js'), 'utf8');
 for (const m of ['GEAR_GUARD', 'GEAR_BLOCK_NOTICE', 'MINIMAL_PREFIX', 'PRESET_DESCRIPTION', 'GEAR_GUARD_VAR', 'GEAR_MARK', 'KB_PATH_VAR'])
   chk(`lib/gear.js 含「${m}」`, gear.includes(m));
-for (const m of ['仅供学习研究', '不给具体剂量', '不出处方笺', '针灸只给推荐穴位', '不写进针深浅', '按学理模式七段作答', '配伍禁忌必说', '药典用量警示必说', '复杂病症分主次必说'])
+for (const m of ['仅供学习研究', '剂量：不自己给量', '不出处方笺', '针灸只给推荐穴位', '不写进针深浅', '按经方学理模式七段作答', '配伍禁忌必说', '药典用量警示必说', '复杂病症分主次必说'])
   chk(`口径锁含「${m}」`, gear.includes(m));
-chk('口径锁本身不含剂量示例', gear.includes("'2. 不给具体剂量：不写任何克数") && !/一两折多少克/.test(gear));
+chk('口径锁本身不含剂量示例', gear.includes("'2. 剂量：不自己给量") && !/一两折多少克/.test(gear));
+chk('口径锁含「18.1 讲药性不抄产地」', gear.includes('18.1 讲药性不抄产地'));
+chk('口径锁含「18.2 注本的增补卷必须标明不是原书原文」', gear.includes('18.2 注本的增补卷必须标明不是原书原文'));
+chk('18.2 含增补卷标注口径「原书未收，此书增补」', gear.includes('原书未收，此书增补'));
+chk('口径锁含「18.3 本草新编要用户自己放进来」', gear.includes('18.3 本草新编要用户自己放进来'));
 
 // ---------- 3. 宿主半接线 ----------
 const host = fs.readFileSync(path.join(PLUGIN, 'lib', 'index.js'), 'utf8');
-for (const m of ['hasDosage', "ctx.on('llm/stream'", 'GEAR_GUARD', 'GEAR_GUARD_VAR', "variable(KB_PATH_VAR", 'ctx.effect', 'ensureCorpus', 'createSessionRecorder', 'autoFileBooks', "inject = ['systemPrompt']"])
+for (const m of ['hasDosage', "ctx.on('llm/stream'", 'GEAR_GUARD', 'GEAR_GUARD_VAR', 'defineVar(KB_PATH_VAR', 'ctx.effect', 'ensureCorpus', 'createSessionRecorder', 'autoFileBooks', "inject = ['systemPrompt']"])
   chk(`lib/index.js 含「${m}」`, host.includes(m));
 chk('lib/index.js 不再补发检索规程', !host.includes('ensureAssets'));
 chk('lib/index.js 同一目录只挂一份监视', host.includes('WATCHERS') && host.includes('shared.holders'));
@@ -126,12 +134,15 @@ chk('预设名注明学习版', String(cfg.name).includes('学习版'), cfg.name
 chk('预设说明写明仅供学习研究', String(cfg.description).includes('仅供学习研究'));
 const prefix = ((cfg.plugins || []).find((x) => x.id === 'persona') || {}).config?.prefix || '';
 chk('persona 提示词以常驻口径变量开头', prefix.trimStart().startsWith('{{tcm_gear_guard}}'));
-for (const m of ['不给具体剂量', '不出处方笺', '针灸只给推荐穴位', '不写进针深浅', '五段'])
+for (const m of ['剂量：不自己给量', '不出处方笺', '针灸只给推荐穴位', '不写进针深浅', '五段'])
   chk(`persona 提示词含「${m}」`, prefix.includes(m));
-chk('persona 仍带资料库变量', prefix.includes('{{tcm_kb_path}}'));
+chk('persona 仍带资料库变量', prefix.includes('{{tcm_xueli_kb_path}}'));
 chk('问诊参考结构无第 11 项', !prefix.includes('"11. '));
-chk('问诊只问脉证', prefix.includes('问诊只问脉证'));
-chk('出方格式为学理模式七段，不再分详略档', prefix.includes('按学理模式七段作答') && !prefix.includes('详略只调'));
+chk('问诊改用家常说法（不许问六部脉）', prefix.includes('不许写成「六部脉是什么」') && prefix.includes('身上哪儿难受'));
+chk('出方格式为学理模式七段，不再分详略档', prefix.includes('按经方学理模式七段作答') && !prefix.includes('详略只调'));
+chk('第一段硬格式：手上的线索 + 三行固定句式',
+  prefix.includes('## 手上的线索') && prefix.includes('够定的是：') && prefix.includes('不够定的是：') && prefix.includes('所以要问的是：'));
+chk('线索清点含性别年龄体重小便', ['性别未说', '体重未说', '小便未问'].every((k) => prefix.includes(k)));
 
 // ---------- 7. profile 注册 ----------
 const prof = JSON.parse(fs.readFileSync(path.join(PROFILE, 'package.json'), 'utf8'));
@@ -180,10 +191,15 @@ if (diff === 0) chk(`node_modules 副本与源 ${files.length} 个文件一致`,
 // ---------- 10. 资料库（提示） ----------
 const { defaultKbPath, normalizeRoot } = await import(new URL('file:///' + path.join(PLUGIN, 'lib', 'platform.js').replace(/\\/g, '/')).href);
 const base = normalizeRoot(process.env.TCM_KB_PATH || defaultKbPath());
-note('资料库目录存在', fs.existsSync(base), base);
-if (fs.existsSync(base)) {
-  note('索引.md 存在', fs.existsSync(path.join(base, '索引.md')));
-  note('随包经典已补到 text/', fs.existsSync(path.join(base, 'text', '03-伤寒论.txt')));
+// 插件不再预设资料库目录：没给 TCM_KB_PATH 就跳过资料库检查，不算 WARN。
+if (!base) {
+  info('资料库检查已跳过', '没设 TCM_KB_PATH，插件也不再预设目录');
+} else {
+  note('资料库目录存在', fs.existsSync(base), base);
+  if (fs.existsSync(base)) {
+    note('索引.md 存在', fs.existsSync(path.join(base, '索引.md')));
+    note('随包经典已补到 text/', fs.existsSync(path.join(base, 'text', '03-伤寒论.txt')));
+  }
 }
 
 console.log(`profile：${PROFILE}`);
