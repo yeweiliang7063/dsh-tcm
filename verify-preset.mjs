@@ -71,7 +71,9 @@ const info = (name, detail = '') => {
 // ---------- 1. 插件本体 ----------
 const pkg = JSON.parse(fs.readFileSync(path.join(PLUGIN, 'package.json'), 'utf8'));
 const isLocalOnly = pkg.private === true;
-chk(`包名 ${PKG}`, pkg.name === PKG, pkg.name);
+// 插件 id 仍叫 dsh-tcm，npm 包名可以另起（旧包被 npm 官方接管，发不了同名包）
+const NPM_NAMES = new Set([PKG, `${PKG}-xueli`]);
+chk(`包名 ${pkg.name}`, NPM_NAMES.has(pkg.name), [...NPM_NAMES].join(' / '));
 chk('bundle.patch 指向 cordis.patch.yml', pkg?.dsh?.bundle?.patch === './cordis.patch.yml');
 chk('main 为 lib/index.js', pkg.main === 'lib/index.js');
 chk('client.platform = web', pkg?.dsh?.client?.platform === 'web');

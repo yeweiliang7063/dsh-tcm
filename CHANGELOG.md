@@ -1,5 +1,14 @@
 # 改动记录
 
+## 3.0.2
+
+上 npm。
+
+- **npm 包名改成 `dsh-tcm-xueli`**：原 `dsh-tcm` 包是作者早期版本（1.3.0），原账号注销后包被 npm 官方接管（maintainers 变成 `npm-support`），发不了同名包，所以另起名字发布。插件 id、预设 id、安装目录仍叫 `dsh-tcm`，老装法不受影响。
+- **加了 publishConfig**：发布目标固定 `https://registry.npmjs.org`、`access: public`，避免本机 `~/.npmrc` 指向国内镜像时发错地方。
+- **自检放宽包名检查**：`verify-preset.mjs` 允许 `dsh-tcm` 与 `dsh-tcm-xueli` 两个名字，其余仍卡死。
+- README 安装段同步说明两个名字的关系。
+
 ## 3.0.1
 
 修 3.0.0 漏改的两处过期文字。
