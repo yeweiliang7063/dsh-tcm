@@ -92,10 +92,13 @@ chk('口径锁含「18.1 讲药性不抄产地」', gear.includes('18.1 讲药�
 chk('口径锁含「18.2 注本的增补卷必须标明不是原书原文」', gear.includes('18.2 注本的增补卷必须标明不是原书原文'));
 chk('18.2 含增补卷标注口径「原书未收，此书增补」', gear.includes('原书未收，此书增补'));
 chk('口径锁含「18.3 本草新编要用户自己放进来」', gear.includes('18.3 本草新编要用户自己放进来'));
+chk('口径锁含「21.3 分析病症必须带上当下的季节与天气」', gear.includes('21.3 分析病症必须带上当下的季节与天气'));
+chk('口径锁里 15 条已改名为资料库目录与检索范围', gear.includes('15. 资料库目录与检索范围'));
+chk('gear.js 导出时令变量', gear.includes("SEASON_VAR = 'tcm_xueli_season'"));
 
 // ---------- 3. 宿主半接线 ----------
 const host = fs.readFileSync(path.join(PLUGIN, 'lib', 'index.js'), 'utf8');
-for (const m of ['hasDosage', "ctx.on('llm/stream'", 'GEAR_GUARD', 'GEAR_GUARD_VAR', 'defineVar(KB_PATH_VAR', 'ctx.effect', 'ensureCorpus', 'createSessionRecorder', 'autoFileBooks', "inject = ['systemPrompt']"])
+for (const m of ['hasDosage', "ctx.on('llm/stream'", 'GEAR_GUARD', 'GEAR_GUARD_VAR', 'defineVar(KB_PATH_VAR', 'defineVar(SEASON_VAR', 'seasonText', 'ctx.effect', 'ensureCorpus', 'createSessionRecorder', 'autoFileBooks', "inject = ['systemPrompt']"])
   chk(`lib/index.js 含「${m}」`, host.includes(m));
 chk('lib/index.js 不再补发检索规程', !host.includes('ensureAssets'));
 chk('lib/index.js 同一目录只挂一份监视', host.includes('WATCHERS') && host.includes('shared.holders'));
@@ -139,6 +142,8 @@ chk('persona 提示词以常驻口径变量开头', prefix.trimStart().startsWit
 for (const m of ['剂量：不自己给量', '不出处方笺', '针灸只给推荐穴位', '不写进针深浅', '五段'])
   chk(`persona 提示词含「${m}」`, prefix.includes(m));
 chk('persona 仍带资料库变量', prefix.includes('{{tcm_xueli_kb_path}}'));
+chk('persona 带时令变量', prefix.includes('{{tcm_xueli_season}}'));
+chk('persona 时令段写明天气取不到要问', prefix.includes('按节气常理') && prefix.includes('ask_user_question'));
 chk('问诊参考结构无第 11 项', !prefix.includes('"11. '));
 chk('问诊改用家常说法（不许问六部脉）', prefix.includes('不许写成「六部脉是什么」') && prefix.includes('身上哪儿难受'));
 chk('出方格式为学理模式七段，不再分详略档', prefix.includes('按经方学理模式七段作答') && !prefix.includes('详略只调'));
