@@ -149,7 +149,25 @@ chk('问诊改用家常说法（不许问六部脉）', prefix.includes('不许�
 chk('出方格式为学理模式七段，不再分详略档', prefix.includes('按经方学理模式七段作答') && !prefix.includes('详略只调'));
 chk('第一段硬格式：手上的线索 + 三行固定句式',
   prefix.includes('## 手上的线索') && prefix.includes('够定的是：') && prefix.includes('不够定的是：') && prefix.includes('所以要问的是：'));
-chk('线索清点含性别年龄体重小便', ['性别未说', '体重未说', '小便未问'].every((k) => prefix.includes(k)));
+chk('线索清点含性别年龄体重脉象小便', ['性别未说', '体重未说', '脉象未问', '小便未问'].every((k) => prefix.includes(k)));
+chk('线索底数含体重与脉象', prefix.includes('这十项是定病定证的底数') && prefix.includes('体重与胖瘦、脉象（不会把脉就按身上哪儿难受挑一项）'));
+chk('没问齐只许再问不许动笔（判例在）', prefix.includes('典型的违规长这样') && prefix.includes('3 项「没问」的必须当场用 ask_user_question 问出去'));
+chk('方证主依据：五运六气 + 八纲为基石六经为框架', prefix.includes('五运六气') && prefix.includes('以八纲为基石') && prefix.includes('以六经为框架') && prefix.includes('司天什么') && prefix.includes('至真要大论'));
+chk('五种方法齐：整体/审因/四诊/辨病辨证/阴性症状', ['整体观念', '审证求因', '四诊合参', '辨病与辨证结合', '阴性症状'].every((k) => prefix.includes(k)));
+chk('阴性症状要举例并说明排除哪一路', prefix.includes('不恶寒') && prefix.includes('排除') );
+chk('AI 幻觉提示写在末尾声明里', prefix.includes('AI 有幻觉：以上内容由人工智能生成') && prefix.includes('请自行核对原书后再用'));
+chk('五运六气必须引运气七篇原文', prefix.includes('不许含糊说一句「今年运气偏某某」'));
+chk('动态问诊：十项不许缺，略过要逐项注明', prefix.includes('⑬问诊要动态') && prefix.includes('您选择略过'));
+chk('略过项不算缺项', prefix.includes('只数「既没答、也没被对方明确略过」的项'));
+chk('六经归属必须讲（不许只讲脏腑）', prefix.includes('先说这个证归哪一经') && prefix.includes('六经归属不典型，以脏腑辨证为主'));
+chk('教材题不许豁免问诊', prefix.includes('只豁免「不接首诊、不开药」这一条') && prefix.includes('不许自称「这是教材题'));
+chk('时令必须落到治法方向', prefix.includes('只写一句「时令这段只作说明、不改上面的辨证」等于没写'));
+chk('讲第几气只许用当期六气，不许把下一气提前引', prefix.includes('第几气」只许用提示词') && prefix.includes('不许把下一气提前拿来用'));
+chk('五格齐全：证法方穴服后核对', prefix.includes('21.4 一次回答必须给出「本案怎么治」') && prefix.includes('五格齐全，缺一格判不合格'));
+chk('方名核不到也必须给穴位', prefix.includes('方可以不报，穴必须给'));
+chk('不许摆两条路让人自己选', prefix.includes('「两条路，你选一条」判不合格'));
+chk('跳过不许撤掉证法穴', prefix.includes('⑸跳过项不许拖垮五格') && prefix.includes('把「等寒热定了再谈方穴」当收尾'));
+chk('六经与时令必须排在最前', prefix.includes('21.5 开头的次序是固定的') && prefix.includes('「## 六经与时令」这一节'));
 
 // ---------- 7. profile 注册 ----------
 const prof = JSON.parse(fs.readFileSync(path.join(PROFILE, 'package.json'), 'utf8'));
