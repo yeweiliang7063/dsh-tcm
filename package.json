@@ -51,7 +51,6 @@
   "bugs": {
     "url": "https://github.com/yeweiliang7063/dsh-tcm/issues"
   },
-  "private": true,
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"
