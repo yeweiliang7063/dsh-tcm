@@ -8,6 +8,8 @@
 - **加了 publishConfig**：发布目标固定 `https://registry.npmjs.org`、`access: public`，避免本机 `~/.npmrc` 指向国内镜像时发错地方。
 - **自检放宽包名检查**：`verify-preset.mjs` 允许 `dsh-tcm` 与 `dsh-tcm-xueli` 两个名字，其余仍卡死。
 - README 安装段同步说明两个名字的关系。
+- **已发布**：`dsh-tcm-xueli@3.0.2` 上线 npm（2026-11-16），插件市场填包名即可安装；GitHub Release 见 <https://github.com/yeweiliang7063/dsh-tcm/releases/tag/v3.0.2>。
+- **去掉了 `package.json` 里的 `private` 字段**：有这个字段 npm 会直接拒绝发布（`EPRIVATE`）。
 
 ## 3.0.1
 
