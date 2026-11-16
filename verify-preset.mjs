@@ -7,7 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import vm from 'node:vm';
 
@@ -137,8 +137,13 @@ const cfg = presetRow ? presetRow.config : {};
 chk('预设 id=dsh-tcm、order=5', cfg.id === 'dsh-tcm' && cfg.order === 5, `id=${cfg.id} order=${cfg.order}`);
 chk('预设名注明学习版', String(cfg.name).includes('学习版'), cfg.name);
 chk('预设说明写明仅供学习研究', String(cfg.description).includes('仅供学习研究'));
-const prefix = ((cfg.plugins || []).find((x) => x.id === 'persona') || {}).config?.prefix || '';
-chk('persona 提示词以常驻口径变量开头', prefix.trimStart().startsWith('{{tcm_gear_guard}}'));
+const rawPrefix = ((cfg.plugins || []).find((x) => x.id === 'persona') || {}).config?.prefix || '';
+chk('persona 提示词以常驻口径变量开头', rawPrefix.trimStart().startsWith('{{tcm_gear_guard}}'));
+// 规矩正文只在 lib/gear.js 里维护，预设用 {{tcm_gear_guard}} 展开：
+// 下面各条检查都跑在「展开之后」的完整提示词上，跟模型真看到的一致。
+const { GEAR_GUARD: GUARD_TEXT } = await import(pathToFileURL(path.join(PLUGIN, 'lib', 'gear.js')).href);
+const prefix = rawPrefix.replace('{{tcm_gear_guard}}', GUARD_TEXT);
+chk('预设里不再内联整份口径（只留变量，避免两处各改一半）', !rawPrefix.includes('剂量：不自己给量'));
 for (const m of ['剂量：不自己给量', '不出处方笺', '针灸只给推荐穴位', '不写进针深浅', '五段'])
   chk(`persona 提示词含「${m}」`, prefix.includes(m));
 chk('persona 仍带资料库变量', prefix.includes('{{tcm_xueli_kb_path}}'));
