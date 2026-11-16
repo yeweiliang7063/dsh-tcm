@@ -163,6 +163,7 @@ chk('六经归属必须讲（不许只讲脏腑）', prefix.includes('先说这�
 chk('教材题不许豁免问诊', prefix.includes('只豁免「不接首诊、不开药」这一条') && prefix.includes('不许自称「这是教材题'));
 chk('时令必须落到治法方向', prefix.includes('只写一句「时令这段只作说明、不改上面的辨证」等于没写'));
 chk('讲第几气只许用当期六气，不许把下一气提前引', prefix.includes('第几气」只许用提示词') && prefix.includes('不许把下一气提前拿来用'));
+chk('报数要对一遍数，三类之和等于总数，漏项点名', prefix.includes('列完还要自己对一遍数') && prefix.includes('身高未说'));
 chk('五格齐全：证法方穴服后核对', prefix.includes('21.4 一次回答必须给出「本案怎么治」') && prefix.includes('五格齐全，缺一格判不合格'));
 chk('方名核不到也必须给穴位', prefix.includes('方可以不报，穴必须给'));
 chk('不许摆两条路让人自己选', prefix.includes('「两条路，你选一条」判不合格'));
