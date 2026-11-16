@@ -13,7 +13,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { hasDosage, blotDosage } from '../lib/dosage-guard.js'
+import { hasDosage, blotDosage, sourceDoseKeys } from '../lib/dosage-guard.js'
 
 const INDEX = join(import.meta.dirname, '..', 'lib', 'index.js')
 
@@ -42,22 +42,27 @@ function makeStream(src, overrides = {}) {
   const body = src.slice(bodyStart, i - 1)
 
   // 真实代码里 verdict() 调的是模块作用域的 tcmVerdict，不是从 deps 拿的。
-  // 这里把它换成「确定是中医会话」，其余一行不动，这样剂量分支才会被执行到。
+  // 默认换成「确定是中医会话」，其余一行不动，这样剂量分支才会被执行到；
+  // 要验「宿主说不是中医」的分支，用 overrides.verdict 指定返回值。
+  const verdictLine = overrides.verdict
+    ? `const verdict = () => (${JSON.stringify(overrides.verdict)})`
+    : 'const verdict = () => ({ decided: true, tcm: true })'
   const patched = body.replace(
     'const verdict = () => tcmVerdict(ctx, options?.sessionId, name)',
-    'const verdict = () => ({ decided: true, tcm: true })',
+    verdictLine,
   )
   assert.notEqual(patched, body, '源码里找不到 verdict 定义，测试需要跟着改')
 
   const harness = `
     return (async function* (options, next, deps) {
-      const { hasDosage, blotDosage, ctx, name, SCAN_WINDOW } = deps
+      const { hasDosage, blotDosage, sourceDoseKeys, ctx, name, SCAN_WINDOW } = deps
       // 会话开场提醒要查资料库路径和会话类型：默认当「已经填了路径、就是中医会话」。
       const NOTICE_BLOCK = 0
       const kbNoticed = new Set()
       const kbNotice = deps.kbNotice || (() => '')
       const currentPath = deps.currentPath || (() => 'D:/中医知识库')
       const looksTcmSession = deps.looksTcmSession || (() => true)
+      const looksTcmPrompt = deps.looksTcmPrompt || (() => false)
       ${patched}
     })
   `
@@ -65,18 +70,20 @@ function makeStream(src, overrides = {}) {
   const deps = {
     hasDosage,
     blotDosage,
+    sourceDoseKeys,
     ctx: { logger: { warn() {} }, on() {} },
     name: 'dsh-tcm',
     SCAN_WINDOW: 600,
     kbNotice: overrides.kbNotice,
     currentPath: overrides.currentPath,
     looksTcmSession: overrides.looksTcmSession,
+    looksTcmPrompt: overrides.looksTcmPrompt,
   }
   return (chunks) => {
     async function* source() {
       for (const c of chunks) yield c
     }
-    return factory({ sessionId: 's1' }, source, deps)
+    return factory({ sessionId: 's1', ...(overrides.options || {}) }, source, deps)
   }
 }
 
@@ -143,13 +150,13 @@ test('流块类型：普通长回答，每块合法、正文完整', async () =>
   assert.ok(out.some((c) => c.type === 'finish'), 'finish 块被吞了')
 })
 
-test('流块类型：命中剂量被挖掉，剩下的仍是合法块', async () => {
-  // 这条走的是「命中剂量 → blotDosage 挖掉 → 继续发」那条分支，
+test('流块类型：命中剂量只遮数值，药名和骨架保留', async () => {
+  // 这条走的是「命中剂量 → blotDosage 遮数值 → 继续发」那条分支，
   // 早期版本正是在这条分支上把对象又包了一层，报 text-delta text must be a string。
   const run = makeStream(readFileSync(INDEX, 'utf8'))([
     START,
     TEXT('这是辨证思路，正常一句。'),
-    TEXT('桂枝三两，芍药三两。'),
+    TEXT('桂枝 9g，芍药 9g。'),
     TEXT('后面还有正常的思路。'),
     ...END,
   ])
@@ -160,11 +167,14 @@ test('流块类型：命中剂量被挖掉，剩下的仍是合法块', async ()
   const joined = out.filter((c) => c.type === 'text-delta').map((c) => c.text).join('')
   assert.ok(joined.includes('这是辨证思路'), '正常句被误伤了：' + joined)
   assert.ok(joined.includes('后面还有正常的思路'), '正常句被误伤了：' + joined)
-  assert.ok(!joined.includes('三两'), '剂量没挖干净：' + joined)
-  assert.ok(joined.includes('✳'), '挖掉的地方应该留个标记：' + joined)
+  assert.ok(!joined.includes('9g'), '剂量没遮干净：' + joined)
+  assert.ok(joined.includes('✳'), '遮掉的地方应该留个标记：' + joined)
+  // 只遮数值：药名和句子骨架都得还在
+  assert.ok(joined.includes('桂枝'), '药名被一起挖掉了：' + joined)
+  assert.ok(joined.includes('芍药'), '药名被一起挖掉了：' + joined)
 })
 
-test('流块类型：剂量跨段、整段挖掉时也不许把对象又包一层', async () => {
+test('流块类型：剂量跨段时也不许把对象又包一层', async () => {
   // 这条是 2.2.2 线上真实崩过的场景，报错原文：
   //   TypeError: text-delta text must be a string
   // 成因：take() 里「整段挖掉」那条分支 yield 的是已经包好的对象，
@@ -181,7 +191,52 @@ test('流块类型：剂量跨段、整段挖掉时也不许把对象又包一�
   assertBlocksOpened(out, '剂量跨段')
 
   const joined = out.filter((c) => c.type === 'text-delta').map((c) => c.text).join('')
-  assert.ok(!joined.includes('三两'), '剂量没挖干净：' + joined)
+  assert.ok(!joined.includes('三两'), '剂量没遮干净：' + joined)
+  // 前一段尾巴里有语境时，这一段本身没有可遮的数，不能整段抹成 ✳
+  assert.ok(joined.includes('这是下一句'), '后一段被整段抹掉了：' + joined)
+})
+
+test('流块类型：列表里转述整张方，攒成整段后放行', async () => {
+  // 列表逐行到达：单个换行不切段，等空行到了才整段判，才能认出「4 味以上整张方」。
+  const formula = '1. **桂枝** 9g\n2. **白芍** 9g\n3. **生姜** 9g\n4. **甘草** 6g\n\n'
+  const run = makeStream(readFileSync(INDEX, 'utf8'))([
+    START,
+    TEXT('这是转述一张方子：\n\n'),
+    TEXT(formula),
+    TEXT('接着讲思路。'),
+    ...END,
+  ])
+  const out = await collect(run)
+  assertAllBlocksLegal(out, '整方转述')
+  assertBlocksOpened(out, '整方转述')
+
+  const joined = out.filter((c) => c.type === 'text-delta').map((c) => c.text).join('')
+  assert.ok(joined.includes('**桂枝** 9g'), '整张方被误遮了：' + joined)
+  assert.ok(joined.includes('**甘草** 6g'), '整张方被误遮了：' + joined)
+  assert.ok(joined.includes('接着讲思路'), '正常句被误伤了：' + joined)
+})
+
+test('流块类型：列表每行带句号，也要整块判出整张方', async () => {
+  // 列表一行一句、逐行到达时，单行只有一味药；必须把整块攒到空行再判，
+  // 否则每行都会被单独遮掉，整方转述照样被误伤。
+  const run = makeStream(readFileSync(INDEX, 'utf8'))([
+    START,
+    TEXT('1. **桂枝** 9g，解肌发表。\n'),
+    TEXT('2. **白芍** 9g，敛阴和营。\n'),
+    TEXT('3. **生姜** 9g，和胃止呕。\n'),
+    TEXT('4. **甘草** 6g，调和诸药。\n'),
+    TEXT('\n'),
+    TEXT('接着讲思路。'),
+    ...END,
+  ])
+  const out = await collect(run)
+  assertAllBlocksLegal(out, '带句号的整方')
+  assertBlocksOpened(out, '带句号的整方')
+
+  const joined = out.filter((c) => c.type === 'text-delta').map((c) => c.text).join('')
+  assert.ok(joined.includes('**桂枝** 9g'), '整张方被误遮了：' + joined)
+  assert.ok(joined.includes('**甘草** 6g'), '整张方被误遮了：' + joined)
+  assert.ok(joined.includes('接着讲思路'), '正常句被误伤了：' + joined)
 })
 
 test('流块类型：正文一直没收尾，靠结束块收走也不出问题', async () => {
@@ -237,4 +292,66 @@ test('不是中医会话：原样转发，一个字节都不动', async () => {
   assert.equal(out.length, 5, '非中医会话应该原样转发：' + JSON.stringify(out))
   assert.equal(out[1].text, '桂枝三两。', '非中医会话不许挖句')
   assert.ok(!JSON.stringify(out).includes('⚠️'), '非中医会话不许插提醒')
+})
+test('点评别人的方：原单上的剂量照念放行，模型自己新给的量照遮', async () => {
+  // 原单是用户发来的（messages 里的 user 消息），上面印着 30g／15g／10g。
+  // 模型点评时逐味转述原单，这几个数是「别人的量」，一个都不许遮；
+  // 只有模型自己新加的「陈皮 6g」才算自己出量，照遮。
+  const messages = [
+    { role: 'system', content: '你是中医助手。' },
+    { role: 'user', content: '这是我拿到的方：黄芪30g、当归15g、白术10g，请点评。' },
+    { role: 'assistant', content: '好的，我先看方。' },
+  ]
+  const run = makeStream(readFileSync(INDEX, 'utf8'), { options: { messages } })([
+    START,
+    TEXT('原单上黄芪 30g、当归 15g、白术 10g，三味都是补气健脾的路子。'),
+    TEXT('可以再加陈皮 6g，理气。'),
+    ...END,
+  ])
+  const out = await collect(run)
+  assertAllBlocksLegal(out, '点评原单')
+  assertBlocksOpened(out, '点评原单')
+
+  const joined = out.filter((c) => c.type === 'text-delta').map((c) => c.text).join('')
+  assert.ok(joined.includes('黄芪 30g'), '原单上的量被遮了：' + joined)
+  assert.ok(joined.includes('当归 15g'), '原单上的量被遮了：' + joined)
+  assert.ok(joined.includes('白术 10g'), '原单上的量被遮了：' + joined)
+  assert.ok(joined.includes('陈皮 ✳'), '模型自己新给的量没遮：' + joined)
+  assert.ok(!joined.includes('6g'), '模型自己新给的量没遮干净：' + joined)
+})
+test('会话认不出来但提示词带学理模式总纲：仍按中医会话遮数', async () => {
+  const system = '【学理模式·总纲——本节优先于下文任何出方规则】……其余口径……'
+  const run = makeStream(readFileSync(INDEX, 'utf8'), {
+    looksTcmSession: () => false,
+    looksTcmPrompt: (text) => typeof text === 'string' && text.includes('【学理模式·总纲'),
+    options: { system },
+  })([START, TEXT('生姜 25g，先煎十分钟。'), ...END])
+  const out = await collect(run)
+  const joined = out.filter((c) => c.type === 'text-delta').map((c) => c.text).join('')
+  assert.ok(joined.includes('生姜 ✳'), '提示词是学理模式却没遮：' + joined)
+})
+
+test('宿主说不是中医会话，但这次提示词带学理模式总纲：仍按中医会话遮数', async () => {
+  // 宿主没拿到会话对象、或者预设投影落空时，会给出「确定不是中医」的结论；
+  // 只要这次请求的 system 里确实带着学理模式总纲，口径就还得在。
+  const system = '【学理模式·总纲——本节优先于下文任何出方规则】……其余口径……'
+  const run = makeStream(readFileSync(INDEX, 'utf8'), {
+    verdict: { decided: true, tcm: false },
+    looksTcmPrompt: (text) => typeof text === 'string' && text.includes('【学理模式·总纲'),
+    options: { system },
+  })([START, TEXT('生姜 25g，先煎十分钟。'), ...END])
+  const out = await collect(run)
+  const joined = out.filter((c) => c.type === 'text-delta').map((c) => c.text).join('')
+  assert.ok(joined.includes('生姜 ✳'), '提示词是学理模式却没遮：' + joined)
+})
+
+test('会话认不出来、提示词也不是学理模式：一个字节都不动', async () => {
+  const run = makeStream(readFileSync(INDEX, 'utf8'), {
+    looksTcmSession: () => false,
+    looksTcmPrompt: () => false,
+    options: { system: '你是通用助手。' },
+  })([START, TEXT('生姜 25g，先煎十分钟。'), ...END])
+  const out = await collect(run)
+  const joined = out.filter((c) => c.type === 'text-delta').map((c) => c.text).join('')
+  assert.equal(joined, '生姜 25g，先煎十分钟。')
 })
