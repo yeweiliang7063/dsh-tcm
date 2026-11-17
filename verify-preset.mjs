@@ -193,7 +193,8 @@ note(`node_modules/${MOD} 指向当前插件目录`, sameTarget, INSTALLED);
 
 // ---------- 8. 副本一致性 ----------
 const files = ['package.json', 'cordis.patch.yml', 'lib/index.js', 'lib/gear.js', 'lib/dosage-guard.js', 'lib/preset.js', 'lib/client.js', 'lib/kb-index.js', 'lib/platform.js', 'lib/corpus.js', 'lib/records.js', 'lib/book-text.js', 'lib/book-classify.js', 'lib/auto-file.js', 'lib/build-index.mjs'];
-const md5 = (p) => createHash('md5').update(fs.readFileSync(p)).digest('hex');
+// 从 npm/git 装的副本会被 git 换成 CRLF，源目录是 LF；比内容不比行尾
+const md5 = (p) => createHash('md5').update(fs.readFileSync(p, 'utf8').replaceAll(String.fromCharCode(13) + String.fromCharCode(10), String.fromCharCode(10))).digest('hex');
 let diff = 0;
 for (const f of files) {
   const s = path.join(PLUGIN, f);
