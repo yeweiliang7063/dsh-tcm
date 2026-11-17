@@ -1,5 +1,13 @@
 # 改动记录
 
+## 3.1.6
+
+装法统一到包名，不再靠一个残留链接才跑得起来。
+
+- **行模块名改成包名**：`cordis.patch.yml` 的行说明符从 `dsh-tcm` 改成 `dsh-tcm-xueli`，与 npm 包名、`node_modules` 目录名、浏览器半侧登记名三者对齐；行 id 与预设 id 仍叫 `dsh-tcm`，资料库配置、设置命名空间都不受影响。
+- **卸载重装不再留尾巴**：以前从仓库装成 `node_modules/dsh-tcm-xueli` 时，行说明符 `dsh-tcm` 只能解析到早先 link 安装留下的旧符号链接；链接一清就加载失败。现在按包名解析，链接可以安全删除。
+- `install.mjs` 的链接目标与 bundles 登记、`verify-preset.mjs` 的安装路径与 bundles/dependencies 检查，一并改用包名 `dsh-tcm-xueli`；预设 id、插件导出名、`var NS` 仍为 `dsh-tcm`。
+
 ## 3.1.5
 
 设置里的「中医 · 经方」那一节回来了。

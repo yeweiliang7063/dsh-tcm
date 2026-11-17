@@ -12,7 +12,8 @@ import { spawnSync } from 'node:child_process';
 import vm from 'node:vm';
 
 const PLUGIN = path.dirname(fileURLToPath(import.meta.url));
-const PKG = 'dsh-tcm';
+const PKG = 'dsh-tcm';        // 行 id、预设 id、插件导出名
+const MOD = 'dsh-tcm-xueli';  // npm 包名＝node_modules 里的目录名＝模块说明符
 
 function findProfile() {
   const given = process.env.TCM_PROFILE;
@@ -35,7 +36,7 @@ if (!PROFILE) {
   console.error('✖ 找不到 DSH profile。先启动一次 DSH，或用环境变量 TCM_PROFILE 指定 profile 目录。');
   process.exit(1);
 }
-const INSTALLED = path.join(PROFILE, 'node_modules', PKG);
+const INSTALLED = path.join(PROFILE, 'node_modules', MOD);
 
 const require_ = createRequire(path.join(PROFILE, 'package.json'));
 const requirePlugin = createRequire(path.join(PLUGIN, 'package.json'));
@@ -131,7 +132,7 @@ const tree = doc.toJS();
 const rows = Array.isArray(tree) && tree[0] ? tree[0].insert || [] : [];
 const pluginRow = rows.find((x) => x && x.id === PKG);
 const presetRow = rows.find((x) => x && x.id === 'preset-tcm');
-chk(`insert 含 ${PKG} 行`, !!pluginRow && pluginRow.name === PKG);
+chk(`insert 含 ${PKG} 行`, !!pluginRow && pluginRow.name === pkg.name, pluginRow && pluginRow.name);
 chk('insert 含 preset-tcm 行且为 agent-preset', !!presetRow && presetRow.name === '@deepseek-ai/dsh-agent-preset');
 const cfg = presetRow ? presetRow.config : {};
 chk('预设 id=dsh-tcm、order=5', cfg.id === 'dsh-tcm' && cfg.order === 5, `id=${cfg.id} order=${cfg.order}`);
@@ -178,17 +179,17 @@ chk('六经与时令必须排在最前', prefix.includes('21.5 开头的次序�
 // ---------- 7. profile 注册 ----------
 const prof = JSON.parse(fs.readFileSync(path.join(PROFILE, 'package.json'), 'utf8'));
 const bundles = prof?.dsh?.profile?.bundles || [];
-chk(`profile bundles 含 ${PKG}`, bundles.includes(PKG));
-chk('profile bundles 没有重复登记', bundles.filter((x) => x === PKG).length <= 1, bundles.join(','));
-const depSpec = String(prof?.dependencies?.[PKG] || '');
-chk(`profile dependencies 含 ${PKG}`, depSpec !== '', depSpec || '缺失');
+chk(`profile bundles 含 ${MOD}`, bundles.includes(MOD));
+chk('profile bundles 没有重复登记', bundles.filter((x) => x === MOD).length <= 1, bundles.join(','));
+const depSpec = String(prof?.dependencies?.[MOD] || '');
+chk(`profile dependencies 含 ${MOD}`, depSpec !== '', depSpec || '缺失');
 let sameTarget = false;
 try {
   sameTarget = fs.realpathSync(INSTALLED) === fs.realpathSync(PLUGIN);
 } catch {
   sameTarget = false;
 }
-note(`node_modules/${PKG} 指向当前插件目录`, sameTarget, INSTALLED);
+note(`node_modules/${MOD} 指向当前插件目录`, sameTarget, INSTALLED);
 
 // ---------- 8. 副本一致性 ----------
 const files = ['package.json', 'cordis.patch.yml', 'lib/index.js', 'lib/gear.js', 'lib/dosage-guard.js', 'lib/preset.js', 'lib/client.js', 'lib/kb-index.js', 'lib/platform.js', 'lib/corpus.js', 'lib/records.js', 'lib/book-text.js', 'lib/book-classify.js', 'lib/auto-file.js', 'lib/build-index.mjs'];

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 一键安装「中医 · 经方（学习版）」中医预设（dsh-tcm）到本机 DSH
+// 一键安装「中医 · 经方（学习版）」中医预设（npm 包名 dsh-tcm-xueli，预设 id 仍叫 dsh-tcm）到本机 DSH
 //
 // 用法：
 //   node install.mjs                     用当前脚本所在目录作为插件来源
@@ -8,8 +8,8 @@
 //   node install.mjs --kb <目录>          指定资料库目录（只用于检查提示）
 //
 // 做的事：
-//   1. 把本源目录链接进 profile 的 node_modules/dsh-tcm（已指向别处则改名备份，不删除）；
-//   2. 在 profile 的 dependencies 里登记本源，在 dsh.profile.bundles 里登记 dsh-tcm；
+//   1. 把本源目录链接进 profile 的 node_modules/dsh-tcm-xueli（已指向别处则改名备份，不删除）；
+//   2. 在 profile 的 dependencies 里登记本源，在 dsh.profile.bundles 里登记 dsh-tcm-xueli；
 //   3. 跑静态自检（verify-preset.mjs）；
 //   4. 提示重启 DSH 与选预设。
 //
@@ -22,7 +22,7 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { defaultKbPath, normalizeRoot } from './lib/platform.js'
 
-const PKG = 'dsh-tcm'
+const PKG = 'dsh-tcm-xueli'
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const DRY = process.argv.includes('--dry-run')
 
