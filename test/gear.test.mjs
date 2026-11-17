@@ -111,6 +111,17 @@ test('maskDosage：遮数字、留单位', () => {
   assert.equal(maskDosage('水三升'), '水三升')
 })
 
+test('版式与待定项：结论先行、能表格就表格、不提问也要点明缺项影响', () => {
+  // 手机上一屏看不完的排版，等于白写：结论先摆、长段落拆短、对比一律上表格。
+  for (const keyword of ['10.1 版式', '结论先行', '表格', '加粗', '1500 字']) {
+    assert.ok(GEAR_GUARD.includes(keyword), `版式口径缺「${keyword}」`)
+  }
+  // 对方说「不用提问」时不许再追问，但也必须把缺什么、影响什么写成一句，并把缺项归入待定。
+  for (const keyword of ['21.7 对方说', '不再调 ask_user_question', '略过', '待定']) {
+    assert.ok(GEAR_GUARD.includes(keyword), `待定项口径缺「${keyword}」`)
+  }
+})
+
 test('口径文案：四类约束都写到了', () => {
   for (const keyword of ['仅供学习研究', '剂量：不自己给量', '不出处方笺', '针灸只给推荐穴位', '不写进针深浅']) {
     assert.ok(GEAR_GUARD.includes(keyword), `口径锁缺「${keyword}」`)
