@@ -118,7 +118,7 @@ try {
   chk('lib/client.js 语法可解析', false, e.message);
 }
 const clientJs = fs.readFileSync(path.join(PLUGIN, 'lib', 'client.js'), 'utf8');
-for (const m of ["id: 'dsh-tcm'", "var NS = 'dsh-tcm'", "form.set('kbPath'", '学理模式'])
+for (const m of [`id: '${pkg.name}'`, "var NS = 'dsh-tcm'", "form.set('kbPath'", '学理模式'])
   chk(`lib/client.js 含「${m}」`, clientJs.includes(m));
 chk('lib/client.js 不再有挡位按钮', !clientJs.includes("form.set('level'"));
 
