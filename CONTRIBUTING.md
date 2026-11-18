@@ -4,7 +4,7 @@
 
 ## 提问题
 
-- 用 [Issues](https://github.com/yeweiliang7063/dsh-tcm/issues) 反馈，新建时选「问题反馈」表单，按字段填即可。
+- 用 [Issues](https://github.com/yeweiliang7063/dsh-tcm-xueli/issues) 反馈，新建时选「问题反馈」表单，按字段填即可。
 - 表单里三件事必填：DSH 版本、操作系统、你说了什么、插件答了什么。
 - 界面问题请附截图；回答口径问题请贴出原始提问与回答片段。
 

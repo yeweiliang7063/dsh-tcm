@@ -139,7 +139,7 @@
 
 **第一步：下载**
 
-打开 <https://github.com/yeweiliang7063/dsh-tcm/releases/latest>，点 **Source code (zip)** 下载压缩包。或者仓库首页绿色 **Code** 按钮 → **Download ZIP**。
+打开 <https://github.com/yeweiliang7063/dsh-tcm-xueli/releases/latest>，点 **Source code (zip)** 下载压缩包。或者仓库首页绿色 **Code** 按钮 → **Download ZIP**。
 
 **第二步：解压**
 

@@ -65,12 +65,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yeweiliang7063/dsh-tcm.git"
+    "url": "git+https://github.com/yeweiliang7063/dsh-tcm-xueli.git"
   },
   "author": "yeweiliang7063",
-  "homepage": "https://github.com/yeweiliang7063/dsh-tcm#readme",
+  "homepage": "https://github.com/yeweiliang7063/dsh-tcm-xueli#readme",
   "bugs": {
-    "url": "https://github.com/yeweiliang7063/dsh-tcm/issues"
+    "url": "https://github.com/yeweiliang7063/dsh-tcm-xueli/issues"
   },
   "publishConfig": {
     "access": "public",
