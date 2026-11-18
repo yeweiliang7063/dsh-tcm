@@ -129,7 +129,7 @@ test('版式与待定项：结论先行、能表格就表格、不提问也要�
 })
 
 test('口径文案：四类约束都写到了', () => {
-  for (const keyword of ['仅供学习研究', '剂量：不自己给量', '不出处方笺', '针灸只给推荐穴位', '不写进针深浅']) {
+  for (const keyword of ['仅供学习研究', '剂量：不自己给量', '不出处方笺', '针灸只给推荐穴位', '不写进针深浅', '⑭线索只写一遍', '其余同上一轮所列']) {
     assert.ok(GEAR_GUARD.includes(keyword), `口径锁缺「${keyword}」`)
   }
   assert.ok(GEAR_GUARD.includes(GEAR_MARK))
