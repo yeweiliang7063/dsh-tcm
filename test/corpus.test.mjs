@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { ensureAssets, ensureCorpus } from '../lib/corpus.js'
+import { ensureCorpus } from '../lib/corpus.js'
 import { ensureCategoryDirs } from '../lib/kb-index.js'
 
 test('ensureCorpus：把十部经典补到 text/，第二次不重复复制', () => {
@@ -27,13 +27,6 @@ test('ensureCorpus：资料库里已有同名文件时不覆盖', () => {
   fs.writeFileSync(target, '我自己整理的版本', 'utf8')
   ensureCorpus(kb)
   assert.equal(fs.readFileSync(target, 'utf8'), '我自己整理的版本')
-})
-
-test('ensureAssets：学理模式不再往资料库补规程与剂量速查', () => {
-  const kb = fs.mkdtempSync(path.join(os.tmpdir(), 'tcm-assets-'))
-  assert.equal(ensureAssets(kb), 0)
-  assert.equal(fs.existsSync(path.join(kb, 'skills')), false)
-  assert.equal(fs.existsSync(path.join(kb, 'references')), false)
 })
 
 test('ensureCategoryDirs：建五个分类文件夹，第二次不重复', () => {

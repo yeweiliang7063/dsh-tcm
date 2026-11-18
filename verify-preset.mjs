@@ -101,7 +101,6 @@ chk('gear.js 导出时令变量', gear.includes("SEASON_VAR = 'tcm_xueli_season'
 const host = fs.readFileSync(path.join(PLUGIN, 'lib', 'index.js'), 'utf8');
 for (const m of ['hasDosage', "ctx.on('llm/stream'", 'GEAR_GUARD', 'GEAR_GUARD_VAR', 'defineVar(KB_PATH_VAR', 'defineVar(SEASON_VAR', 'seasonText', 'ctx.effect', 'ensureCorpus', 'createSessionRecorder', 'autoFileBooks', "inject = ['systemPrompt']"])
   chk(`lib/index.js 含「${m}」`, host.includes(m));
-chk('lib/index.js 不再补发检索规程', !host.includes('ensureAssets'));
 chk('lib/index.js 同一目录只挂一份监视', host.includes('WATCHERS') && host.includes('shared.holders'));
 chk('lib/index.js 不再有挡位开关', !host.includes('currentLevel') && !host.includes("'level'"));
 
