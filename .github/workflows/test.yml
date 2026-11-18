@@ -32,6 +32,11 @@ jobs:
       - name: 单元测试
         run: npm test
 
+      # 打包自检：看 npm 实际打出来的清单，确认 lib/、corpus/、assets/ 都进了包，
+      # 测试目录没混进去；files 白名单一写错这里就红。
+      - name: 打包自检
+        run: node test/pack-check.mjs
+
       # 真装一遍：造一个空的 DSH profile，把插件装进去。
       # 走的是和用户解压后敲 node install.mjs 完全相同的代码路径（含装完自带的那遍自检）。
       - name: 真装一遍（Windows）

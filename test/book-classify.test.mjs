@@ -35,3 +35,7 @@ test('classifyBook：空输入不硬归类', () => {
   assert.equal(result.category, '其他')
   assert.equal(result.score, 0)
 })
+test('classifyBook：正文里出现「讲义」不算讲稿，书名才是凭证', () => {
+  const text = '太阳之为病，脉浮，头项强痛而恶寒。' + '这一条讲义里讲过。'.repeat(3)
+  assert.equal(classifyBook({ name: '伤寒论', text }).category, '经典')
+});

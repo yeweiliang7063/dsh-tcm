@@ -60,6 +60,11 @@ test('safeTitle：去掉 Windows 非法字符，空标题退回会话号', () =>
   assert.equal(safeTitle('x'.repeat(120), 'session-abcdef123456').length, 80)
 })
 
+test('safeTitle：撞上 Windows 设备名的标题要加前缀，不然文件根本写不进去', () => {
+  assert.equal(safeTitle('CON', 'session-abcdef123456'), '中医会话-CON')
+  assert.equal(safeTitle('com3', 'session-abcdef123456'), '中医会话-com3')
+  assert.equal(safeTitle('TCM病案', 'session-abcdef123456'), 'TCM病案')
+});
 test('conversationFromEvents：只收真人发言与助手正文，保持顺序', () => {
   const events = [
     userEvent('后脑勺疼。', 1),
@@ -170,7 +175,7 @@ test('createSessionRecorder：按当前预设归档整段会话，标题来自�
   const events = [userEvent('后脑勺疼。'), assistantEvent('请补脉证。')]
   const tcmSession = {
     id: 'session-aaaabbbb',
-    header: { agentPreset: 'dsh-tcm' },
+    header: { agentPreset: 'dsh-tcm-xueli' },
     title: '61岁高血压患者后脑勺疼',
     snapshotEvents: () => events,
   }
@@ -179,7 +184,7 @@ test('createSessionRecorder：按当前预设归档整段会话，标题来自�
   const switchedSession = {
     id: 'session-switched1',
     header: { agentPreset: 'cordis' },
-    projectionPreset: 'dsh-tcm',
+    projectionPreset: 'dsh-tcm-xueli',
     title: '切换预设后的会话',
     snapshotEvents: () => [userEvent('头疼。'), assistantEvent('请补脉证。')],
   }

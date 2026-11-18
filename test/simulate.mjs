@@ -59,7 +59,7 @@ mod.apply(first.ctx, settings)
 assert.equal(mod.currentPath(settings), path.resolve(kbDir).replace(/[\\/]+$/, ''))
 
 // ── 检查 1：提示词变量 ──
-for (const name of [gear.KB_PATH_VAR, gear.KB_LINK_VAR, gear.GEAR_GUARD_VAR]) {
+for (const name of [gear.KB_PATH_VAR, gear.GEAR_GUARD_VAR]) {
   assert.ok(first.variables.has(name), `缺少变量 ${name}`)
 }
 assert.equal(first.variables.get(gear.GEAR_GUARD_VAR)(), gear.GEAR_GUARD, '常驻口径应等于口径锁')

@@ -60,3 +60,9 @@ test('toDisplayPath：Windows 反斜杠转正斜杠，POSIX 原样', () => {
   assert.equal(toDisplayPath('C:\\中医知识库\\text\\伤寒论.md', win), 'C:/中医知识库/text/伤寒论.md')
   assert.equal(toDisplayPath('/home/zhangsan/中医知识库/text/伤寒论.md', linux), '/home/zhangsan/中医知识库/text/伤寒论.md')
 })
+test('normalizeRoot：盘符相对写法按没填好处理，不拿整盘当资料库', () => {
+  const win = { platform: 'win32', path: path.win32, home: String.raw`C:\Users\zhangsan` }
+  assert.equal(normalizeRoot('C:', win), '')
+  assert.equal(normalizeRoot('C:中医知识库', win), '')
+  assert.equal(normalizeRoot(String.raw`C:\中医知识库`, win), String.raw`C:\中医知识库`)
+});

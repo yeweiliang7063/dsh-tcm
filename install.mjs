@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 一键安装「中医 · 经方（学习版）」中医预设（npm 包名 dsh-tcm-xueli，预设 id 仍叫 dsh-tcm）到本机 DSH
+// 一键安装「中医 · 经方（学习版）」中医预设（npm 包名与预设 id 统一为 dsh-tcm-xueli）到本机 DSH
 //
 // 用法：
 //   node install.mjs                     用当前脚本所在目录作为插件来源
@@ -22,7 +22,8 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { defaultKbPath, normalizeRoot } from './lib/platform.js'
 
-const PKG = 'dsh-tcm-xueli'
+/** npm 包名，也是宿主登记名；行 id 与预设 id 同名，都是 dsh-tcm-xueli。 */
+const PKG_NAME = 'dsh-tcm-xueli'
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const DRY = process.argv.includes('--dry-run')
 
@@ -84,7 +85,7 @@ function findProfile(explicit) {
 
 // ── 2. 链接 ──────────────────────────────────────────────────────
 function installDir(profile) {
-  return path.join(profile, 'node_modules', PKG)
+  return path.join(profile, 'node_modules', PKG_NAME)
 }
 
 function linkSource(profile) {
@@ -129,12 +130,12 @@ function patchProfile(profile) {
   const before = JSON.stringify(pkg)
 
   pkg.dependencies = pkg.dependencies || {}
-  pkg.dependencies[PKG] = 'link:' + HERE.replace(/\\/g, '/')
+  pkg.dependencies[PKG_NAME] = 'link:' + HERE.replace(/\\/g, '/')
 
   pkg.dsh = pkg.dsh || {}
   pkg.dsh.profile = pkg.dsh.profile || {}
   const bundles = Array.isArray(pkg.dsh.profile.bundles) ? pkg.dsh.profile.bundles : []
-  if (!bundles.includes(PKG)) bundles.push(PKG)
+  if (!bundles.includes(PKG_NAME)) bundles.push(PKG_NAME)
   pkg.dsh.profile.bundles = bundles
 
   if (JSON.stringify(pkg) === before) {
@@ -161,9 +162,9 @@ function verify(profile) {
 
   const pkg = readJson(path.join(profile, 'package.json'))
   const bundles = pkg?.dsh?.profile?.bundles || []
-  if (!bundles.includes(PKG)) problems.push(`profile 的 bundles 里没有 ${PKG}`)
-  if (bundles.filter((x) => x === PKG).length > 1) problems.push(`${PKG} 在 bundles 里登记了不止一次`)
-  if (!pkg?.dependencies?.[PKG]) problems.push(`profile 的 dependencies 里没有 ${PKG}`)
+  if (!bundles.includes(PKG_NAME)) problems.push(`profile 的 bundles 里没有 ${PKG_NAME}`)
+  if (bundles.filter((x) => x === PKG_NAME).length > 1) problems.push(`${PKG_NAME} 在 bundles 里登记了不止一次`)
+  if (!pkg?.dependencies?.[PKG_NAME]) problems.push(`profile 的 dependencies 里没有 ${PKG_NAME}`)
 
   if (problems.length) {
     for (const p of problems) mark.warn(p)

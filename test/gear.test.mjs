@@ -16,15 +16,13 @@ import { defaultKbPath, normalizeRoot } from '../lib/platform.js'
 test('hasDosage：认得出各路剂量写法', () => {
   const hits = [
     '桂枝 9 g',
-    '麻黄三两',
+    '麻黄10克',
     '炙甘草 3克',
-    '生姜 5 钱',
-    '每日服两服',
-    '每次 150ml',
+    '生姜 5 克',
     '石膏 40g 先煎',
-    // 单味药报方量、拆开来写的方量，照样是能照着抓的量
-    '桂枝三两',
-    '其方桂枝三两，芍药三两',
+    // 2026-11 口径：只遮「克」前面的数字；两、钱、毫升、剂、服不再自动遮
+    '桂枝 12 克',
+    '其方桂枝 9 克，芍药 9 克',
   ]
   for (const text of hits) assert.ok(hasDosage(text), `应判为剂量：${text}`)
 })
@@ -56,6 +54,12 @@ test('hasDosage：不把条号、序数、成语里的数字当剂量', () => {
     // 原文整条照引：同一句里有方名、有煎服法，算引用不算给药量
     '桂枝汤：桂枝三两，芍药三两，生姜三两，大枣十二枚，甘草二两，以水七升，煮取三升，去滓，分温三服',
     '理中丸：人参、干姜、甘草、白术各三两，捣筛，蜜和为丸',
+    // 2026-11 口径：经典计量与毫升不再算「要遮的剂量」，原文原话照抄
+    '麻黄三两',
+    '桂枝 5 钱',
+    '每日服两服',
+    '每次 150ml',
+    '其方桂枝三两，芍药三两',
     '表现为下肢浮肿',
     '本节仅供学习研究，不构成诊疗建议。',
   ]
@@ -105,8 +109,10 @@ test('blotDosage：整段转述整张方时整段放行', () => {
 
 test('maskDosage：遮数字、留单位', () => {
   assert.equal(maskDosage('桂枝 9 g'), '桂枝 ＿＿g')
-  assert.equal(maskDosage('麻黄三两'), '麻黄＿＿两')
-  assert.match(maskDosage('每次 150ml'), /每次 ＿＿ml/)
+  assert.equal(maskDosage('麻黄10克'), '麻黄＿＿克')
+  // 两、毫升不再打码：经典计量原样保留
+  assert.equal(maskDosage('麻黄三两'), '麻黄三两')
+  assert.equal(maskDosage('每次 150ml'), '每次 150ml')
   // 古文计量放行：原样保留
   assert.equal(maskDosage('水三升'), '水三升')
 })
@@ -165,7 +171,7 @@ test('配置：只剩资料库路径与自动索引两项，没有挡位', async
 
 test('minimalPreset：结构完整，persona 带经方学理口径', () => {
   const preset = minimalPreset('win32')
-  assert.equal(preset.id, 'dsh-tcm')
+  assert.equal(preset.id, 'dsh-tcm-xueli')
   assert.ok(String(preset.description).startsWith('仅供学习研究使用'))
   const persona = preset.plugins.find((item) => item.id === 'persona')
   assert.ok(persona, '应有 persona 行')
@@ -184,4 +190,21 @@ test('资料库路径：填了的目录原样用，不自动建子目录', () =>
   } finally {
     fs.rmSync(kb, { recursive: true, force: true })
   }
+})
+
+test('本轮口径：内经饮食、只遮克数、六部脉分开问、红线条、Markdown', () => {
+  for (const keyword of ['红线条：一切结论必须有经典原文支撑', '不许拿自己记住的医学知识往外发散', '这一条不下断']) {
+    assert.ok(GEAR_GUARD.includes(keyword), `红线口径缺「${keyword}」`)
+  }
+  for (const keyword of ['饮食调护按《黄帝内经》讲', '五谷为养', '左寸候心', '右尺候命门', '直接六部逐部分开问', '点了它不算这一部问完', 'Markdown 排版', '照抄，不许自己推干支']) {
+    assert.ok(GEAR_GUARD.includes(keyword), `本轮口径缺「${keyword}」`)
+  }
+  // 旧口径必须真的退场：一律不许提吃的、未收可按通行说法讲药性
+  assert.ok(!GEAR_GUARD.includes('一律不出任何可吃的东西'), '饮食禁令还在')
+  assert.ok(!GEAR_GUARD.includes('照样可以按通行说法讲药性'), '凭记忆讲药性还在')
+  // 开头那行只写「**结论**：」，不带表情、不带方括号、不把急救信号塞进去
+  assert.ok(GEAR_GUARD.includes('**结论**：'), '开头结论行不见了')
+  assert.ok(!GEAR_GUARD.includes('大白话结论'), '旧标签「大白话结论」还在')
+  assert.ok(!GEAR_GUARD.includes('👉'), '开头那个表情还在')
+  assert.ok(!GEAR_GUARD.includes('立刻去医院'), '急救信号还塞在开头结论行里')
 })

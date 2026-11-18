@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { INDEX_FILE, buildIndexMarkdown, writeIndex } from '../lib/kb-index.js'
+import { INDEX_FILE, buildIndexMarkdown, writeIndex, scriptTag } from '../lib/kb-index.js'
 
 function makeTree() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'qh-index-'))
@@ -133,3 +133,14 @@ test('writeIndex：根目录不存在时不写盘、返回 root-missing', () => 
   assert.equal(result.changed, false)
   assert.equal(result.reason, 'root-missing')
 })
+test('scriptTag：繁体书按 UTF-8 与 UTF-16 都能认出字形', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kb-script-'))
+  const trad = '爲為經識鬱證脈體氣陽陰虛實熱藥湯溫涼補瀉衛營臟風濕頭頸聲數聽寫讀學'.repeat(20)
+  const utf8File = path.join(dir, 'a.txt')
+  fs.writeFileSync(utf8File, trad, 'utf8')
+  assert.equal(scriptTag(utf8File), '繁体')
+  const utf16File = path.join(dir, 'b.txt')
+  fs.writeFileSync(utf16File, Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(trad, 'utf16le')]))
+  assert.equal(scriptTag(utf16File), '繁体', 'UTF-16LE 的书不该标不出字形')
+  fs.rmSync(dir, { recursive: true, force: true })
+});

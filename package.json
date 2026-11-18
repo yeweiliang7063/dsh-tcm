@@ -1,6 +1,6 @@
 {
   "name": "dsh-tcm-xueli",
-  "version": "3.1.6",
+  "version": "3.1.7",
   "description": "DeepSeek Harness（DSH）中医预设「中医 · 经方」：仅供学习研究使用——只给辨证思路，不给具体剂量，不出处方笺，针灸只给推荐穴位；自带资料库索引与会话归档。",
   "type": "module",
   "main": "lib/index.js",
@@ -24,37 +24,6 @@
     "!**/*.bak-*",
     "!*.bak-*"
   ],
-  "scripts": {
-    "index": "node lib/build-index.mjs",
-    "verify": "node verify-preset.mjs",
-    "setup": "node install.mjs",
-    "test": "node --test test/platform.test.mjs test/kb-index.test.mjs test/corpus.test.mjs test/records.test.mjs test/book-text.test.mjs test/book-classify.test.mjs test/auto-file.test.mjs test/gear.test.mjs test/stream.test.mjs test/season.test.mjs"
-  },
-  "keywords": [
-    "dsh",
-    "dsh-plugin",
-    "deepseek-harness",
-    "preset",
-    "tcm",
-    "中医",
-    "经方",
-    "学习研究",
-    "辨证思路"
-  ],
-  "license": "MIT",
-  "author": "yeweiliang7063",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/yeweiliang7063/dsh-tcm.git"
-  },
-  "homepage": "https://github.com/yeweiliang7063/dsh-tcm#readme",
-  "bugs": {
-    "url": "https://github.com/yeweiliang7063/dsh-tcm/issues"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org"
-  },
   "engines": {
     "dsh": ">=0.2.2-rc.1"
   },
@@ -72,11 +41,39 @@
       ]
     }
   },
+  "scripts": {
+    "index": "node lib/build-index.mjs",
+    "verify": "node verify-preset.mjs",
+    "setup": "node install.mjs",
+    "test": "node --test test/platform.test.mjs test/kb-index.test.mjs test/corpus.test.mjs test/records.test.mjs test/book-text.test.mjs test/book-classify.test.mjs test/auto-file.test.mjs test/gear.test.mjs test/preset-scope.test.mjs test/stream.test.mjs test/season.test.mjs test/wuyun.test.mjs test/package.test.mjs"
+  },
   "dependencies": {
     "@deepseek-ai/schemastery": "^3.19.0",
     "yaml": "^2.9.1"
   },
-  "peerDependencies": {
-    "@deepseek-ai/schemastery": "*"
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "preset",
+    "tcm",
+    "中医",
+    "经方",
+    "学习研究",
+    "辨证思路"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yeweiliang7063/dsh-tcm.git"
+  },
+  "author": "yeweiliang7063",
+  "homepage": "https://github.com/yeweiliang7063/dsh-tcm#readme",
+  "bugs": {
+    "url": "https://github.com/yeweiliang7063/dsh-tcm/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

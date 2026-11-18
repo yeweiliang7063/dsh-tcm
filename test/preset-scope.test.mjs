@@ -7,7 +7,7 @@ import { looksTcm, looksTcmPrompt } from '../lib/preset-scope.js'
 import { GEAR_GUARD, GEAR_MARK } from '../lib/gear.js'
 
 test('预设名带中医字样才算中医会话', () => {
-  for (const name of ['dsh-tcm', '中医 · 经方（学习版）', '经方学理', 'tcm-xueli'])
+  for (const name of ['dsh-tcm', 'dsh-tcm-xueli', '中医 · 经方（学习版）', '经方学理', 'tcm-xueli'])
     assert.ok(looksTcm(name), `应认成中医会话：${name}`)
   for (const name of ['default', '通用助手', '代码助手', 'native', ''])
     assert.equal(looksTcm(name), false, `不该认成中医会话：${name}`)

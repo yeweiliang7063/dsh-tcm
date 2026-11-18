@@ -12,7 +12,7 @@ import { spawnSync } from 'node:child_process';
 import vm from 'node:vm';
 
 const PLUGIN = path.dirname(fileURLToPath(import.meta.url));
-const PKG = 'dsh-tcm';        // 行 id、预设 id、插件导出名
+const PKG = 'dsh-tcm-xueli';        // 行 id、预设 id、插件导出名
 const MOD = 'dsh-tcm-xueli';  // npm 包名＝node_modules 里的目录名＝模块说明符
 
 function findProfile() {
@@ -72,7 +72,7 @@ const info = (name, detail = '') => {
 // ---------- 1. 插件本体 ----------
 const pkg = JSON.parse(fs.readFileSync(path.join(PLUGIN, 'package.json'), 'utf8'));
 const isLocalOnly = pkg.private === true;
-// 插件 id 仍叫 dsh-tcm，npm 包名可以另起（旧包被 npm 官方接管，发不了同名包）
+// 插件 id、行 id、npm 包名统一叫 dsh-tcm-xueli；旧名（tcm / dsh-tcm）只作兼容样本
 const NPM_NAMES = new Set([PKG, `${PKG}-xueli`]);
 chk(`包名 ${pkg.name}`, NPM_NAMES.has(pkg.name), [...NPM_NAMES].join(' / '));
 chk('bundle.patch 指向 cordis.patch.yml', pkg?.dsh?.bundle?.patch === './cordis.patch.yml');
@@ -107,8 +107,8 @@ chk('lib/index.js 不再有挡位开关', !host.includes('currentLevel') && !hos
 
 // ---------- 4. 出口校验 ----------
 const guard = fs.readFileSync(path.join(PLUGIN, 'lib', 'dosage-guard.js'), 'utf8');
-// 2026-11-14：剂量守卫重写，UNIT_WORD / LITER_WORD 两个旧常量合并成 NUM / LATIN_UNIT
-for (const m of ['hasDosage', 'maskDosage', 'NUM', 'LATIN_UNIT', 'ARTICLE_MARK'])
+// 2026-11-18：只遮「克」前面的数字，毫升与两钱不再遮；引文整句放行
+for (const m of ['hasDosage', 'maskDosage', 'NUM', 'DOSE_UNITS', 'QUOTE_LINE', 'ARTICLE_MARK'])
   chk(`lib/dosage-guard.js 含「${m}」`, guard.includes(m));
 
 // ---------- 5. 客户端半语法 ----------
@@ -119,7 +119,7 @@ try {
   chk('lib/client.js 语法可解析', false, e.message);
 }
 const clientJs = fs.readFileSync(path.join(PLUGIN, 'lib', 'client.js'), 'utf8');
-for (const m of [`id: '${pkg.name}'`, "var NS = 'dsh-tcm'", "form.set('kbPath'", '学理模式'])
+for (const m of [`id: '${pkg.name}'`, "var NS = 'dsh-tcm-xueli'", "form.set('kbPath'", '学理模式'])
   chk(`lib/client.js 含「${m}」`, clientJs.includes(m));
 chk('lib/client.js 不再有挡位按钮', !clientJs.includes("form.set('level'"));
 
@@ -135,7 +135,7 @@ const presetRow = rows.find((x) => x && x.id === 'preset-tcm');
 chk(`insert 含 ${PKG} 行`, !!pluginRow && pluginRow.name === pkg.name, pluginRow && pluginRow.name);
 chk('insert 含 preset-tcm 行且为 agent-preset', !!presetRow && presetRow.name === '@deepseek-ai/dsh-agent-preset');
 const cfg = presetRow ? presetRow.config : {};
-chk('预设 id=dsh-tcm、order=5', cfg.id === 'dsh-tcm' && cfg.order === 5, `id=${cfg.id} order=${cfg.order}`);
+chk('预设 id=dsh-tcm-xueli、order=5', cfg.id === 'dsh-tcm-xueli' && cfg.order === 5, `id=${cfg.id} order=${cfg.order}`);
 chk('预设名注明学习版', String(cfg.name).includes('学习版'), cfg.name);
 chk('预设说明写明仅供学习研究', String(cfg.description).includes('仅供学习研究'));
 const rawPrefix = ((cfg.plugins || []).find((x) => x.id === 'persona') || {}).config?.prefix || '';
@@ -151,14 +151,14 @@ chk('persona 仍带资料库变量', prefix.includes('{{tcm_xueli_kb_path}}'));
 chk('persona 带时令变量', prefix.includes('{{tcm_xueli_season}}'));
 chk('persona 时令段写明天气取不到要问', prefix.includes('按节气常理') && prefix.includes('ask_user_question'));
 chk('问诊参考结构无第 11 项', !prefix.includes('"11. '));
-chk('问诊改用家常说法（不许问六部脉）', prefix.includes('不许写成「六部脉是什么」') && prefix.includes('身上哪儿难受'));
+chk('问诊既用家常说法、又六部逐部问脉', prefix.includes('身上哪儿难受') && prefix.includes('直接六部逐部分开问'));
 chk('出方格式为学理模式七段，不再分详略档', prefix.includes('按经方学理模式七段作答') && !prefix.includes('详略只调'));
 chk('第一段硬格式：手上的线索 + 三行固定句式',
   prefix.includes('## 手上的线索') && prefix.includes('够定的是：') && prefix.includes('不够定的是：') && prefix.includes('所以要问的是：'));
 chk('线索清点含性别年龄体重脉象小便', ['性别未说', '体重未说', '脉象未问', '小便未问'].every((k) => prefix.includes(k)));
-chk('线索底数含体重与脉象', prefix.includes('这十项是定病定证的底数') && prefix.includes('体重与胖瘦、脉象（不会把脉就按身上哪儿难受挑一项）'));
+chk('线索底数含体重与脉象', prefix.includes('这十项是定病定证的底数') && prefix.includes('体重与胖瘦、脉象（六部逐部分开问'));
 chk('没问齐只许再问不许动笔（判例在）', prefix.includes('典型的违规长这样') && prefix.includes('3 项「没问」的必须当场用 ask_user_question 问出去'));
-chk('方证主依据：五运六气 + 八纲为基石六经为框架', prefix.includes('五运六气') && prefix.includes('以八纲为基石') && prefix.includes('以六经为框架') && prefix.includes('司天什么') && prefix.includes('至真要大论'));
+chk('方证主依据：五运六气（代码算好照抄）+ 八纲为基石六经为框架', prefix.includes('五运六气') && prefix.includes('以八纲为基石') && prefix.includes('以六经为框架') && prefix.includes('照抄，不许自己推干支') && prefix.includes('至真要大论'));
 chk('五种方法齐：整体/审因/四诊/辨病辨证/阴性症状', ['整体观念', '审证求因', '四诊合参', '辨病与辨证结合', '阴性症状'].every((k) => prefix.includes(k)));
 chk('阴性症状要举例并说明排除哪一路', prefix.includes('不恶寒') && prefix.includes('排除') );
 chk('AI 幻觉提示写在末尾声明里', prefix.includes('AI 有幻觉：以上内容由人工智能生成') && prefix.includes('请自行核对原书后再用'));

@@ -72,7 +72,7 @@ function makeStream(src, overrides = {}) {
     blotDosage,
     sourceDoseKeys,
     ctx: { logger: { warn() {} }, on() {} },
-    name: 'dsh-tcm',
+    name: 'dsh-tcm-xueli',
     SCAN_WINDOW: 600,
     kbNotice: overrides.kbNotice,
     currentPath: overrides.currentPath,
@@ -182,7 +182,7 @@ test('流块类型：剂量跨段时也不许把对象又包一层', async () =>
   // 触发条件：上一段带着剂量语境（进了 tail），这一段本身没有剂量。
   const run = makeStream(readFileSync(INDEX, 'utf8'))([
     START,
-    TEXT('桂枝三两。'),
+    TEXT('桂枝12克。'),
     TEXT('这是下一句。'),
     ...END,
   ])
@@ -191,10 +191,29 @@ test('流块类型：剂量跨段时也不许把对象又包一层', async () =>
   assertBlocksOpened(out, '剂量跨段')
 
   const joined = out.filter((c) => c.type === 'text-delta').map((c) => c.text).join('')
-  assert.ok(!joined.includes('三两'), '剂量没遮干净：' + joined)
+  assert.ok(!joined.includes('12克'), '剂量没遮干净：' + joined)
   // 前一段尾巴里有语境时，这一段本身没有可遮的数，不能整段抹成 ✳
   assert.ok(joined.includes('这是下一句'), '后一段被整段抹掉了：' + joined)
 })
+
+test('流块类型：数字和单位被切在两块，也不许把剂量漏出去', async () => {
+  // 回归用例：3.1.7 体检时发现，「桂枝 9」先到、下一块才到「克」，
+  // 前半段没有单位判不出剂量就原样发了，后半段只剩一个「克」遮不到，
+  // 读者最后看到的是完整剂量。
+  const run = makeStream(readFileSync(INDEX, 'utf8'))([
+    START,
+    TEXT('桂枝 9\n'),
+    TEXT('克。'),
+    ...END,
+  ])
+  const out = await collect(run)
+  assertAllBlocksLegal(out, '剂量切块')
+  assertBlocksOpened(out, '剂量切块')
+
+  const joined = out.filter((c) => c.type === 'text-delta').map((c) => c.text).join('')
+  assert.ok(!joined.includes('9克'), '剂量切块后漏了出去：' + joined)
+  assert.ok(joined.includes('✳'), '遮掉的地方应该留个标记：' + joined)
+});
 
 test('流块类型：列表里转述整张方，攒成整段后放行', async () => {
   // 列表逐行到达：单个换行不切段，等空行到了才整段判，才能认出「4 味以上整张方」。
