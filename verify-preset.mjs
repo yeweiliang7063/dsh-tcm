@@ -99,8 +99,9 @@ chk('gear.js 导出时令变量', gear.includes("SEASON_VAR = 'tcm_xueli_season'
 
 // ---------- 3. 宿主半接线 ----------
 const host = fs.readFileSync(path.join(PLUGIN, 'lib', 'index.js'), 'utf8');
-for (const m of ['hasDosage', "ctx.on('llm/stream'", 'GEAR_GUARD', 'GEAR_GUARD_VAR', 'defineVar(KB_PATH_VAR', 'defineVar(SEASON_VAR', 'seasonText', 'ctx.effect', 'ensureCorpus', 'createSessionRecorder', 'autoFileBooks', "inject = ['systemPrompt']"])
+for (const m of ['hasDosage', "ctx.on('llm/stream'", 'GEAR_GUARD', 'GEAR_GUARD_VAR', 'defineVar(KB_PATH_VAR', 'defineVar(SEASON_VAR', 'seasonText', 'ctx.effect', 'ensureCorpus', 'createSessionRecorder', 'autoFileBooks', 'registerClinicTools'])
   chk(`lib/index.js 含「${m}」`, host.includes(m));
+chk('lib/index.js 的 inject 以 systemPrompt 打头', /export const inject = \['systemPrompt'/.test(host));
 chk('lib/index.js 同一目录只挂一份监视', host.includes('WATCHERS') && host.includes('shared.holders'));
 chk('lib/index.js 不再有挡位开关', !host.includes('currentLevel') && !host.includes("'level'"));
 
@@ -118,7 +119,7 @@ try {
   chk('lib/client.js 语法可解析', false, e.message);
 }
 const clientJs = fs.readFileSync(path.join(PLUGIN, 'lib', 'client.js'), 'utf8');
-for (const m of [`id: '${pkg.name}'`, "var NS = 'dsh-tcm-xueli'", "form.set('kbPath'", '学理模式'])
+for (const m of [`id: '${pkg.name}'`, "var NS = 'dsh-tcm-xueli'", "form.set('kbPath'", '学理模式', "var SIM_PANEL = 'xueli-sim'", "label: function () { return '模拟问诊'; }", "var SIM_CHAT_SLOT = 'xueli.sim.chat'"])
   chk(`lib/client.js 含「${m}」`, clientJs.includes(m));
 chk('lib/client.js 不再有挡位按钮', !clientJs.includes("form.set('level'"));
 
@@ -136,6 +137,11 @@ chk('insert 含 preset-tcm 行且为 agent-preset', !!presetRow && presetRow.nam
 const cfg = presetRow ? presetRow.config : {};
 chk('预设 id=dsh-tcm-xueli、order=5', cfg.id === 'dsh-tcm-xueli' && cfg.order === 5, `id=${cfg.id} order=${cfg.order}`);
 chk('预设名注明学习版', String(cfg.name).includes('学习版'), cfg.name);
+const presetPrefix = String((((cfg.plugins || []).find((x) => x && x.id === 'persona') || {}).config || {}).prefix || '');
+chk('预设提示词含【模拟问诊】段落', presetPrefix.includes('【模拟问诊】'));
+chk('预设提示词写明开局指令格式', presetPrefix.includes('【模拟问诊 · 开局】'));
+chk('预设提示词让裁判记局（xueli_begin_round / xueli_finish_round）', presetPrefix.includes('xueli_begin_round') && presetPrefix.includes('xueli_finish_round'));
+chk('模拟问诊仍守住「不给剂量」', presetPrefix.includes('不给剂量'));
 chk('预设说明写明仅供学习研究', String(cfg.description).includes('仅供学习研究'));
 const rawPrefix = ((cfg.plugins || []).find((x) => x.id === 'persona') || {}).config?.prefix || '';
 chk('persona 提示词以常驻口径变量开头', rawPrefix.trimStart().startsWith('{{tcm_gear_guard}}'));
@@ -191,7 +197,7 @@ try {
 note(`node_modules/${MOD} 指向当前插件目录`, sameTarget, INSTALLED);
 
 // ---------- 8. 副本一致性 ----------
-const files = ['package.json', 'cordis.patch.yml', 'lib/index.js', 'lib/gear.js', 'lib/dosage-guard.js', 'lib/preset.js', 'lib/client.js', 'lib/kb-index.js', 'lib/platform.js', 'lib/corpus.js', 'lib/records.js', 'lib/book-text.js', 'lib/book-classify.js', 'lib/auto-file.js', 'lib/build-index.mjs'];
+const files = ['package.json', 'cordis.patch.yml', 'lib/index.js', 'lib/gear.js', 'lib/dosage-guard.js', 'lib/preset.js', 'lib/client.js', 'lib/kb-index.js', 'lib/platform.js', 'lib/corpus.js', 'lib/records.js', 'lib/book-text.js', 'lib/book-classify.js', 'lib/auto-file.js', 'lib/clinic.js', 'lib/search.js', 'lib/build-index.mjs'];
 // 从 npm/git 装的副本会被 git 换成 CRLF，源目录是 LF；比内容不比行尾
 const md5 = (p) => createHash('md5').update(fs.readFileSync(p, 'utf8').replaceAll(String.fromCharCode(13) + String.fromCharCode(10), String.fromCharCode(10))).digest('hex');
 let diff = 0;

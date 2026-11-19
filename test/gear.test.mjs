@@ -208,3 +208,9 @@ test('本轮口径：内经饮食、只遮克数、六部脉分开问、红线�
   assert.ok(!GEAR_GUARD.includes('👉'), '开头那个表情还在')
   assert.ok(!GEAR_GUARD.includes('立刻去医院'), '急救信号还塞在开头结论行里')
 })
+
+test('9.4 不再挂着全量版的剂量铁律与处方笺条目', async () => {
+  const { GEAR_GUARD } = await import('../lib/gear.js')
+  assert.ok(GEAR_GUARD.includes('9.4 本节任何写法都不得越过'))
+  assert.ok(!GEAR_GUARD.includes('【剂量铁律】的全部折算'))
+})

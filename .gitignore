@@ -15,3 +15,6 @@ Thumbs.db
 *.tmp
 # 本机操作单，不进仓库
 发布到GitHub-操作单.md
+# git 仓库自身与历史备份，绝不进仓库
+.git.broken*/
+.git.bak*/
