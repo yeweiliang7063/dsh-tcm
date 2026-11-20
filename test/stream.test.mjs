@@ -168,7 +168,7 @@ test('流块类型：命中剂量只遮数值，药名和骨架保留', async ()
   assert.ok(joined.includes('这是辨证思路'), '正常句被误伤了：' + joined)
   assert.ok(joined.includes('后面还有正常的思路'), '正常句被误伤了：' + joined)
   assert.ok(!joined.includes('9g'), '剂量没遮干净：' + joined)
-  assert.ok(joined.includes('✳'), '遮掉的地方应该留个标记：' + joined)
+  assert.ok(joined.includes('*'), '遮掉的地方应该留个标记：' + joined)
   // 只遮数值：药名和句子骨架都得还在
   assert.ok(joined.includes('桂枝'), '药名被一起挖掉了：' + joined)
   assert.ok(joined.includes('芍药'), '药名被一起挖掉了：' + joined)
@@ -192,7 +192,7 @@ test('流块类型：剂量跨段时也不许把对象又包一层', async () =>
 
   const joined = out.filter((c) => c.type === 'text-delta').map((c) => c.text).join('')
   assert.ok(!joined.includes('12克'), '剂量没遮干净：' + joined)
-  // 前一段尾巴里有语境时，这一段本身没有可遮的数，不能整段抹成 ✳
+  // 前一段尾巴里有语境时，这一段本身没有可遮的数，不能整段抹成 *
   assert.ok(joined.includes('这是下一句'), '后一段被整段抹掉了：' + joined)
 })
 
@@ -212,7 +212,7 @@ test('流块类型：数字和单位被切在两块，也不许把剂量漏出�
 
   const joined = out.filter((c) => c.type === 'text-delta').map((c) => c.text).join('')
   assert.ok(!joined.includes('9克'), '剂量切块后漏了出去：' + joined)
-  assert.ok(joined.includes('✳'), '遮掉的地方应该留个标记：' + joined)
+  assert.ok(joined.includes('*'), '遮掉的地方应该留个标记：' + joined)
 });
 
 test('流块类型：列表里转述整张方，攒成整段后放行', async () => {
@@ -335,7 +335,7 @@ test('点评别人的方：原单上的剂量照念放行，模型自己新给�
   assert.ok(joined.includes('黄芪 30g'), '原单上的量被遮了：' + joined)
   assert.ok(joined.includes('当归 15g'), '原单上的量被遮了：' + joined)
   assert.ok(joined.includes('白术 10g'), '原单上的量被遮了：' + joined)
-  assert.ok(joined.includes('陈皮 ✳'), '模型自己新给的量没遮：' + joined)
+  assert.ok(joined.includes('陈皮 *'), '模型自己新给的量没遮：' + joined)
   assert.ok(!joined.includes('6g'), '模型自己新给的量没遮干净：' + joined)
 })
 test('会话认不出来但提示词带学理模式总纲：仍按中医会话遮数', async () => {
@@ -347,7 +347,7 @@ test('会话认不出来但提示词带学理模式总纲：仍按中医会话�
   })([START, TEXT('生姜 25g，先煎十分钟。'), ...END])
   const out = await collect(run)
   const joined = out.filter((c) => c.type === 'text-delta').map((c) => c.text).join('')
-  assert.ok(joined.includes('生姜 ✳'), '提示词是学理模式却没遮：' + joined)
+  assert.ok(joined.includes('生姜 *'), '提示词是学理模式却没遮：' + joined)
 })
 
 test('宿主说不是中医会话，但这次提示词带学理模式总纲：仍按中医会话遮数', async () => {
@@ -361,7 +361,7 @@ test('宿主说不是中医会话，但这次提示词带学理模式总纲：�
   })([START, TEXT('生姜 25g，先煎十分钟。'), ...END])
   const out = await collect(run)
   const joined = out.filter((c) => c.type === 'text-delta').map((c) => c.text).join('')
-  assert.ok(joined.includes('生姜 ✳'), '提示词是学理模式却没遮：' + joined)
+  assert.ok(joined.includes('生姜 *'), '提示词是学理模式却没遮：' + joined)
 })
 
 test('会话认不出来、提示词也不是学理模式：一个字节都不动', async () => {

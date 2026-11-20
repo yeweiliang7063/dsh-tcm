@@ -1,6 +1,6 @@
 // 插件加载模拟（不启动 DSH 主体）：用假 ctx 走一遍 apply，检查四件事：
 // 1. 两个提示词变量齐全，常驻口径有内容；
-// 2. 出口校验只把剂量数值遮成 ✳，且只对中医会话生效；
+// 2. 出口校验只把剂量数值遮成 *，且只对中医会话生效；
 // 3. 同一目录只挂一份监视：后加载的实例共用已挂的监视，先加载的一方释放后，后加载的仍正常；
 // 4. 启动后补书、建索引、建分类文件夹，且不往资料库写规程。
 // 用法：node test/simulate.mjs
@@ -87,12 +87,12 @@ async function run(answer, options = {}) {
 
 const masked = await run(['柴胡证以', '少阳为主。', '若用柴胡，一两折 15.6 克。'], { system: TCM_SYSTEM })
 assert.ok(!masked.includes('15.6 克'), '剂量不应漏出')
-assert.ok(masked.includes('一两折 ✳'), '只把数值遮成 ✳，量词与药名留下')
+assert.ok(masked.includes('一两折 *'), '只把数值遮成 *，量词与药名留下')
 assert.ok(masked.includes('柴胡证以'), '正文应保留')
 
 const passed = await run(['少阳病，', '主证为往来寒热。'], { system: TCM_SYSTEM })
 assert.ok(passed.includes('往来寒热'), '正常回答应原样放行')
-assert.ok(!passed.includes('✳'), '没有剂量就不该出现 ✳')
+assert.ok(!passed.includes('*'), '没有剂量就不该出现 *')
 
 const other = await run(['若用柴胡，一两折 15.6 克。'], { system: '你是通用助手，负责回答技术问题。' })
 assert.ok(other.includes('15.6 克'), '非中医会话一个字节都不该动')
@@ -118,7 +118,7 @@ fs.rmSync(path.join(kbDir, 'text', '临时探针.txt'), { force: true })
 
 const warns = [...first.logs, ...second.logs].filter((l) => l[0] === 'warn')
 // 遮数是正常告知（每遮一处记一条），不算异常；其余告警一条都不该有。
-const unexpected = warns.filter(([, text]) => !text.includes('已把数值遮成 ✳'))
+const unexpected = warns.filter(([, text]) => !text.includes('已把数值遮成 *'))
 assert.equal(unexpected.length, 0, `不应有异常告警：${unexpected.map((w) => w[1]).join(' ;; ')}`)
 
 // ── 收尾 ──

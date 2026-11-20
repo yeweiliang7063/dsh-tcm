@@ -68,7 +68,7 @@ test('hasDosage：不把条号、序数、成语里的数字当剂量', () => {
 
 test('blotDosage：只换数字，药名和句子骨架都留着', () => {
   const out = blotDosage('这是辨证思路，生姜 25g，先煎十分钟。')
-  assert.equal(out, '这是辨证思路，生姜 ✳，先煎十分钟。')
+  assert.equal(out, '这是辨证思路，生姜 *，先煎十分钟。')
   assert.ok(out.includes('生姜'), '药名被挖掉了：' + out)
   assert.ok(!out.includes('25'), '数值没遮干净：' + out)
   assert.ok(out.endsWith('。'), '句子骨架被挖掉了：' + out)
@@ -76,26 +76,49 @@ test('blotDosage：只换数字，药名和句子骨架都留着', () => {
   assert.equal(blotDosage('《伤寒论》原文：「桂枝三两，芍药三两」'), '《伤寒论》原文：「桂枝三两，芍药三两」')
 })
 
+test('blotDosage：只遮「数字＋克/g」整截，药名留着（桂枝9克 → 桂枝*）', () => {
+  assert.equal(blotDosage('桂枝9克'), '桂枝*')
+  assert.equal(blotDosage('桂枝 9 克'), '桂枝 *')
+  assert.equal(blotDosage('黄芪30g，煎服。'), '黄芪*，煎服。')
+  // 没有数字就不是剂量：单独的「克」字不许动
+  assert.equal(blotDosage('这味药按克算，没法给准数。'), '这味药按克算，没法给准数。')
+  assert.equal(hasDosage('这味药按克算'), false)
+})
+
+test('blotDosage：只遮「数字＋克/g」整截，药名留着（桂枝9克 → 桂枝*）', () => {
+  assert.equal(blotDosage('桂枝9克'), '桂枝*')
+  assert.equal(blotDosage('黄芪30g，煎服。'), '黄芪*，煎服。')
+  // 没有数字就不是剂量：单独的「克」字不许动
+  assert.equal(blotDosage('这味药按克算，没法给准数。'), '这味药按克算，没法给准数。')
+  assert.equal(hasDosage('这味药按克算'), false)
+})
+
+test('复述原文必须加引号：引号里的剂量不遮，引号外照遮', () => {
+  assert.equal(blotDosage('《伤寒论》原文：「桂枝9克，芍药6克」'), '《伤寒论》原文：「桂枝9克，芍药6克」')
+  assert.equal(blotDosage('引文「桂枝9克」，自己又说桂枝9克'), '引文「桂枝9克」，自己又说桂枝*')
+  assert.equal(maskDosage('「桂枝三两」照抄，桂枝9克'), '「桂枝三两」照抄，桂枝*')
+})
+
 test('blotDosage：列表项前缀永不参与打码', () => {
-  assert.equal(blotDosage('2. **生姜**：25g，切片。'), '2. **生姜**：✳，切片。')
-  assert.equal(blotDosage('- **甘草**：6g，调和诸药。'), '- **甘草**：✳，调和诸药。')
+  assert.equal(blotDosage('2. **生姜**：25g，切片。'), '2. **生姜**：*，切片。')
+  assert.equal(blotDosage('- **甘草**：6g，调和诸药。'), '- **甘草**：*，调和诸药。')
   // 两味药的列表照常遮数值，但序号、加粗药名一个不动
-  assert.equal(blotDosage('1. **桂枝**：9g\n2. **白芍**：9g\n'), '1. **桂枝**：✳\n2. **白芍**：✳\n')
+  assert.equal(blotDosage('1. **桂枝**：9g\n2. **白芍**：9g\n'), '1. **桂枝**：*\n2. **白芍**：*\n')
 })
 
 test('blotDosage：原单上的剂量照念放行，自己新给的量照遮', () => {
   const keep = sourceDoseKeys('我拿到的方：黄芪30g、当归15g、白术10g')
   // 转述原单：这几个数原样留着
   const restated = '原单上黄芪 30g、当归 15g、白术 10g，三味都是补气健脾的路子。'
-  assert.equal(blotDosage(restated, '✳', keep), restated)
+  assert.equal(blotDosage(restated, '*', keep), restated)
   // 单位写法不同也照样对得上号（克 ↔ g）
-  assert.equal(blotDosage('原单上黄芪 30 克。', '✳', keep), '原单上黄芪 30 克。')
+  assert.equal(blotDosage('原单上黄芪 30 克。', '*', keep), '原单上黄芪 30 克。')
   // 同一句里模型自己加的量照遮
-  assert.equal(blotDosage('原单上黄芪 30g，可以再加陈皮 6g。', '✳', keep), '原单上黄芪 30g，可以再加陈皮 ✳。')
+  assert.equal(blotDosage('原单上黄芪 30g，可以再加陈皮 6g。', '*', keep), '原单上黄芪 30g，可以再加陈皮 *。')
   // 有原单可对号时，「整张方 4 味以上就放行」这条不再兜自己拟的方
   assert.equal(
-    blotDosage('桂枝9g、白芍9g、生姜9g、甘草6g', '✳', keep),
-    '桂枝✳、白芍✳、生姜✳、甘草✳',
+    blotDosage('桂枝9g、白芍9g、生姜9g、甘草6g', '*', keep),
+    '桂枝*、白芍*、生姜*、甘草*',
   )
 })
 
@@ -104,12 +127,12 @@ test('blotDosage：整段转述整张方时整段放行', () => {
   assert.equal(blotDosage(formula), formula)
   assert.equal(hasDosage(formula), false)
   // 同段只有三味时不算整张方，照常遮数值
-  assert.equal(blotDosage('桂枝9g、白芍9g、生姜9g'), '桂枝✳、白芍✳、生姜✳')
+  assert.equal(blotDosage('桂枝9g、白芍9g、生姜9g'), '桂枝*、白芍*、生姜*')
 })
 
-test('maskDosage：遮数字、留单位', () => {
-  assert.equal(maskDosage('桂枝 9 g'), '桂枝 ＿＿g')
-  assert.equal(maskDosage('麻黄10克'), '麻黄＿＿克')
+test('maskDosage：数字和单位一起遮成一个 *', () => {
+  assert.equal(maskDosage('桂枝 9 g'), '桂枝 *')
+  assert.equal(maskDosage('麻黄10克'), '麻黄*')
   // 两、毫升不再打码：经典计量原样保留
   assert.equal(maskDosage('麻黄三两'), '麻黄三两')
   assert.equal(maskDosage('每次 150ml'), '每次 150ml')
