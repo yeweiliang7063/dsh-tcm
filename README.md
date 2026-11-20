@@ -132,7 +132,7 @@
 
 ## 安装（给没用过的人看）
 
-> **先说一句**：npm 上同名包（`dsh-tcm-xueli`）就是本插件，npm 上还是 3.2.3 版（<https://www.npmjs.com/package/dsh-tcm-xueli>），GitHub 上已是最新的 3.2.4。但插件不是装进用户目录就能用，还要在 DSH 的 profile 里登记，所以下面两种方式更省事：解压文件夹装，或命令行装。
+> **先说一句**：npm 上同名包（`dsh-tcm-xueli`）就是本插件，已发布 3.2.4 版（<https://www.npmjs.com/package/dsh-tcm-xueli>）。但插件不是装进用户目录就能用，还要在 DSH 的 profile 里登记，所以下面两种方式更省事：解压文件夹装，或命令行装。
 
 **先决条件**：本机装好 DSH 桌面版。不用另装 Node、Python 或任何东西，DSH 自带。
 
@@ -195,7 +195,7 @@ node install.mjs
 |---|---|
 | 资料库 | **没有默认目录**，路径由你在「设置 → 中医 · 经方」里自己填。没填之前插件什么都不做：不建索引、不归档、不补随包经典；此时回答只会给治法方向，不引书、不报方名 |
 | 怎么卸 | 在 DSH 里把 `dsh-tcm-xueli` 这个插件关掉或卸载即可，不影响 DSH 其它功能。**源码文件夹不会被删，随时能再装回来** |
-| npm 上那个同名包 | 就是本插件，npm 上是 3.2.3（<https://www.npmjs.com/package/dsh-tcm-xueli>），GitHub 上是最新的 3.2.4；装法仍按上面的解压或命令行方式，装完才会登记进 DSH |
+| npm 上那个同名包 | 就是本插件，已发布 3.2.4（<https://www.npmjs.com/package/dsh-tcm-xueli>）；装法仍按上面的解压或命令行方式，装完才会登记进 DSH |
 
 ### 安装脚本做了什么（给想确认的人）
 
