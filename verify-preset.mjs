@@ -166,6 +166,8 @@ chk('第一段硬格式：手上的线索 + 三行固定句式',
 chk('线索清点含性别年龄体重脉象小便', ['性别未说', '体重未说', '脉象未问', '小便未问'].every((k) => prefix.includes(k)));
 chk('线索底数含体重与脉象', prefix.includes('这十项是定病定证的底数') && prefix.includes('体重与胖瘦、脉象（六部是必问项'));
 chk('六部脉必问，每部问出速缓沉浮', prefix.includes('六部是必问项、缺一部就不算问完、不许下结论') && prefix.includes('每部都要问出「速缓沉浮」'));
+chk('脉问的选项必须含「不急不慢」与「中」', prefix.includes('「不急不慢」和「中」这两个按钮必须真出现'));
+chk('ask_user_question 选项写成 label 对象，不许纯字符串', prefix.includes('{"label": "选项文字"}') && !prefix.includes('"options": ["'));
 chk('问不齐不许写结论行，只许接着问', prefix.includes('不许写「**结论**」那一行') && prefix.includes('「这只是方向，不是结论」「下面只说方向」不是免问的通行证'));
 chk('没问齐只许再问不许动笔（判例在）', prefix.includes('典型的违规长这样') && prefix.includes('3 项「没问」的必须当场用 ask_user_question 问出去'));
 chk('方证主依据：五运六气（代码算好照抄）+ 八纲为基石六经为框架', prefix.includes('五运六气') && prefix.includes('以八纲为基石') && prefix.includes('以六经为框架') && prefix.includes('照抄，不许自己推干支') && prefix.includes('至真要大论'));
