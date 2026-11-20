@@ -108,7 +108,7 @@ chk('lib/index.js 不再有挡位开关', !host.includes('currentLevel') && !hos
 // ---------- 4. 出口校验 ----------
 const guard = fs.readFileSync(path.join(PLUGIN, 'lib', 'dosage-guard.js'), 'utf8');
 // 2026-11-18：只遮「克」前面的数字，毫升与两钱不再遮；引文整句放行
-for (const m of ['hasDosage', 'maskDosage', 'NUM', 'DOSE_UNITS', 'QUOTE_LINE', 'ARTICLE_MARK'])
+for (const m of ['hasDosage', 'maskDosage', 'NUM', 'DOSE_UNITS', 'QUOTE_MAX', 'quotedRanges', 'ARTICLE_MARK'])
   chk(`lib/dosage-guard.js 含「${m}」`, guard.includes(m));
 
 // ---------- 5. 客户端半语法 ----------
@@ -206,7 +206,7 @@ try {
 note(`node_modules/${MOD} 指向当前插件目录`, sameTarget, INSTALLED);
 
 // ---------- 8. 副本一致性 ----------
-const files = ['package.json', 'cordis.patch.yml', 'lib/index.js', 'lib/gear.js', 'lib/dosage-guard.js', 'lib/preset.js', 'lib/client.js', 'lib/kb-index.js', 'lib/platform.js', 'lib/corpus.js', 'lib/records.js', 'lib/book-text.js', 'lib/book-classify.js', 'lib/auto-file.js', 'lib/clinic.js', 'lib/search.js', 'lib/build-index.mjs'];
+const files = ['package.json', 'cordis.patch.yml', 'lib/index.js', 'lib/gear.js', 'lib/dosage-guard.js', 'lib/preset.js', 'lib/client.js', 'lib/kb-index.js', 'lib/platform.js', 'lib/corpus.js', 'lib/records.js', 'lib/book-text.js', 'lib/book-classify.js', 'lib/auto-file.js', 'lib/clinic.js', 'lib/search.js', 'lib/preset-scope.js', 'lib/season.js', 'lib/build-index.mjs'];
 // 从 npm/git 装的副本会被 git 换成 CRLF，源目录是 LF；比内容不比行尾
 const md5 = (p) => createHash('md5').update(fs.readFileSync(p, 'utf8').replaceAll(String.fromCharCode(13) + String.fromCharCode(10), String.fromCharCode(10))).digest('hex');
 let diff = 0;

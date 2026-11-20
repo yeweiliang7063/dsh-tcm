@@ -5,9 +5,8 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { blotDosage, hasDosage, maskDosage, sourceDoseKeys } from '../lib/dosage-guard.js'
+import { blotDosage, hasDosage, maskDosage, quoteSafeCut } from '../lib/dosage-guard.js'
 import { GEAR_BLOCK_NOTICE, GEAR_GUARD, GEAR_MARK, PRESET_DESCRIPTION } from '../lib/gear.js'
-const D0 = String.fromCharCode(10) + '【学理模式】本节仅供学习研究，不构成诊疗建议。'
 
 import { currentPath } from '../lib/index.js'
 import { corePlugins, minimalPreset } from '../lib/preset.js'
@@ -106,30 +105,90 @@ test('blotDosage：列表项前缀永不参与打码', () => {
   assert.equal(blotDosage('1. **桂枝**：9g\n2. **白芍**：9g\n'), '1. **桂枝**：*\n2. **白芍**：*\n')
 })
 
-test('blotDosage：原单上的剂量照念放行，自己新给的量照遮', () => {
-  const keep = sourceDoseKeys('我拿到的方：黄芪30g、当归15g、白术10g')
-  // 转述原单：这几个数原样留着
+test('不加引号转述原单上的剂量也照遮，整段放进「」才放过', () => {
   const restated = '原单上黄芪 30g、当归 15g、白术 10g，三味都是补气健脾的路子。'
-  assert.equal(blotDosage(restated, '*', keep), restated)
-  // 单位写法不同也照样对得上号（克 ↔ g）
-  assert.equal(blotDosage('原单上黄芪 30 克。', '*', keep), '原单上黄芪 30 克。')
-  // 同一句里模型自己加的量照遮
-  assert.equal(blotDosage('原单上黄芪 30g，可以再加陈皮 6g。', '*', keep), '原单上黄芪 30g，可以再加陈皮 *。')
-  // 有原单可对号时，「整张方 4 味以上就放行」这条不再兜自己拟的方
-  assert.equal(
-    blotDosage('桂枝9g、白芍9g、生姜9g、甘草6g', '*', keep),
-    '桂枝*、白芍*、生姜*、甘草*',
-  )
+  assert.equal(blotDosage(restated), '原单上黄芪 *、当归 *、白术 *，三味都是补气健脾的路子。')
+  assert.equal(hasDosage(restated), true)
+  assert.equal(blotDosage('原单上黄芪 30 克，可以再加陈皮 6g。'), '原单上黄芪 *，可以再加陈皮 *。')
+  // 原单整段抄进引号里，才算照念原文
+  const quoted = '原单上「黄芪 30g、当归 15g、白术 10g」三味，都是补气健脾的路子。'
+  assert.equal(blotDosage(quoted), quoted)
+  assert.equal(hasDosage(quoted), false)
 })
 
-test('blotDosage：整段转述整张方时整段放行', () => {
+test('引号是原文的唯一凭据：没引号、假引号、长引号都不放行', () => {
+  // 括注＋「原文：」不再是免遮旁路
+  assert.equal(blotDosage('（原文：桂枝9克）'), '（原文：桂枝*）')
+  assert.equal(blotDosage('按图上原文：桂枝9克'), '按图上原文：桂枝*')
+  // 只有开头、没闭合的引号，按没加引号处理
+  assert.equal(blotDosage('「桂枝9克'), '「桂枝*')
+  // 引文跨空行不算引一句原文
+  assert.equal(blotDosage('「桂枝9克\n\n芍药6克」'), '「桂枝*\n\n芍药*」')
+  // 超过 240 字的「引文」不是引文，是整段搬，里面剂量照遮
+  const long = '「' + '甲'.repeat(260) + '桂枝9克」'
+  assert.ok(blotDosage(long).endsWith('桂枝*」'), blotDosage(long).slice(-12))
+  // 正常的一句原文照样原样放过
+  assert.equal(blotDosage('《伤寒论》原文：「桂枝9克，芍药6克」'), '《伤寒论》原文：「桂枝9克，芍药6克」')
+  // 引文里的剂量原样，引文外的剂量照遮
+  assert.equal(blotDosage('原文「桂枝9克」，我的方子桂枝9克'), '原文「桂枝9克」，我的方子桂枝*')
+})
+
+test('剂量放行口子收紧：方名、整方、三位数、比例句里的克数都照遮', () => {
+  // 旧版见到「桂枝汤」这种方名就整句放行，等于把剂量送出去
+  assert.equal(blotDosage('参考桂枝汤的思路，桂枝9克'), '参考桂枝汤的思路，桂枝*')
+  // 石膏 150g 也是自己给的量，不再按三位数放行
+  assert.equal(blotDosage('石膏150g，先煎'), '石膏*，先煎')
+  // 比例句只放过「1 比 1」这几个字，同句的克数照遮
+  assert.equal(blotDosage('桂枝9克，芍药9克，比例1比1。'), '桂枝*，芍药*，比例1比1。')
+  assert.equal(blotDosage('桂枝9克，白芍加倍'), '桂枝*，白芍加倍')
+  // 单位写法漏网补齐：毫克、剋、全角数字
+  assert.equal(blotDosage('桂枝90mg'), '桂枝*')
+  assert.equal(blotDosage('桂枝９克'), '桂枝*')
+})
+
+test('blotDosage：整张方没加引号照遮，整段放进「」才放行', () => {
   const formula = ['这是转述一张方子：', '', '1. **桂枝** 9g', '2. **白芍** 9g', '3. **生姜** 9g', '4. **甘草** 6g'].join('\n')
-  assert.equal(blotDosage(formula), formula)
-  assert.equal(hasDosage(formula), false)
-  // 同段只有三味时不算整张方，照常遮数值
+  const masked = ['这是转述一张方子：', '', '1. **桂枝** *', '2. **白芍** *', '3. **生姜** *', '4. **甘草** *'].join('\n')
+  // 口径：只有「」里的原文不遮；没加引号的整方，跟单味药一样照遮。
+  assert.equal(blotDosage(formula), masked)
+  assert.equal(hasDosage(formula), true)
+  const quoted = '这是转述一张方子：「桂枝 9g，白芍 9g，生姜 9g，甘草 6g」'
+  assert.equal(blotDosage(quoted), quoted)
+  assert.equal(hasDosage(quoted), false)
   assert.equal(blotDosage('桂枝9g、白芍9g、生姜9g'), '桂枝*、白芍*、生姜*')
 })
 
+test('括注里的古文计量／比例不再整段放过，同句克数照遮', () => {
+  const leak = [
+    ['（原文：桂枝三两，芍药三两，按桂枝9克、芍药9克抓）', '（原文：桂枝三两，芍药三两，按桂枝*、芍药*抓）'],
+    ['（桂枝9克，白芍9克，1:1）', '（桂枝*，白芍*，1:1）'],
+    ['（按 1 比 1 配，桂枝9克，白芍9克）', '（按 1 比 1 配，桂枝*，白芍*）'],
+    ['（大枣十二枚，桂枝9克）', '（大枣十二枚，桂枝*）'],
+  ]
+  for (const [input, want] of leak) {
+    assert.equal(blotDosage(input), want, input)
+    assert.ok(hasDosage(input), '应判为剂量：' + input)
+  }
+})
+
+test('单位写法补齐：公克、gm、全角 ｍｇ、尅', () => {
+  for (const input of ['桂枝9公克', '桂枝9 gm', '桂枝9ｍｇ', '桂枝9尅']) {
+    assert.equal(blotDosage(input), '桂枝*', input)
+    assert.ok(hasDosage(input), '应判为剂量：' + input)
+  }
+})
+
+test('流式切点：切在引号中间就前移，不把引文劈成两半', () => {
+  const head = '（原文：「桂枝9克，芍药6克。'
+  assert.equal(quoteSafeCut(head, head.length), head.indexOf('「'))
+  // 引文之内的任何切点都前移到开引号；闭合之后的切点照常
+  const whole = '（原文：「桂枝9克，芍药6克。」）后文。'
+  assert.equal(quoteSafeCut(whole, whole.indexOf('」')), whole.indexOf('「'))
+  assert.equal(quoteSafeCut(whole, whole.indexOf('后文')), whole.indexOf('后文'))
+  // 一直不闭合的长引号不许无限扣着：超长就照常切
+  const runaway = '「' + '甲'.repeat(800) + '。'
+  assert.equal(quoteSafeCut(runaway, runaway.length), runaway.length)
+})
 test('maskDosage：数字和单位一起遮成一个 *', () => {
   assert.equal(maskDosage('桂枝 9 g'), '桂枝 *')
   assert.equal(maskDosage('麻黄10克'), '麻黄*')

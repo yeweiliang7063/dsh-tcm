@@ -13,7 +13,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { hasDosage, blotDosage, sourceDoseKeys } from '../lib/dosage-guard.js'
+import { hasDosage, blotDosage, quoteSafeCut } from '../lib/dosage-guard.js'
 
 const INDEX = join(import.meta.dirname, '..', 'lib', 'index.js')
 
@@ -55,7 +55,7 @@ function makeStream(src, overrides = {}) {
 
   const harness = `
     return (async function* (options, next, deps) {
-      const { hasDosage, blotDosage, sourceDoseKeys, ctx, name, SCAN_WINDOW } = deps
+      const { hasDosage, blotDosage, quoteSafeCut, ctx, name, SCAN_WINDOW } = deps
       // 会话开场提醒要查资料库路径和会话类型：默认当「已经填了路径、就是中医会话」。
       const NOTICE_BLOCK = 0
       const kbNoticed = new Set()
@@ -70,7 +70,7 @@ function makeStream(src, overrides = {}) {
   const deps = {
     hasDosage,
     blotDosage,
-    sourceDoseKeys,
+    quoteSafeCut,
     ctx: { logger: { warn() {} }, on() {} },
     name: 'dsh-tcm-xueli',
     SCAN_WINDOW: 600,
@@ -215,8 +215,8 @@ test('流块类型：数字和单位被切在两块，也不许把剂量漏出�
   assert.ok(joined.includes('*'), '遮掉的地方应该留个标记：' + joined)
 });
 
-test('流块类型：列表里转述整张方，攒成整段后放行', async () => {
-  // 列表逐行到达：单个换行不切段，等空行到了才整段判，才能认出「4 味以上整张方」。
+test('流块类型：列表里的整张方没加引号，逐块照遮', async () => {
+  // 列表逐行到达：单个换行不切段，等空行到了才整段判，整方一行一味也照样遮。
   const formula = '1. **桂枝** 9g\n2. **白芍** 9g\n3. **生姜** 9g\n4. **甘草** 6g\n\n'
   const run = makeStream(readFileSync(INDEX, 'utf8'))([
     START,
@@ -230,12 +230,12 @@ test('流块类型：列表里转述整张方，攒成整段后放行', async ()
   assertBlocksOpened(out, '整方转述')
 
   const joined = out.filter((c) => c.type === 'text-delta').map((c) => c.text).join('')
-  assert.ok(joined.includes('**桂枝** 9g'), '整张方被误遮了：' + joined)
-  assert.ok(joined.includes('**甘草** 6g'), '整张方被误遮了：' + joined)
+  assert.ok(joined.includes('**桂枝** *'), '没加引号的整方应照遮：' + joined)
+  assert.ok(joined.includes('**甘草** *'), '没加引号的整方应照遮：' + joined)
   assert.ok(joined.includes('接着讲思路'), '正常句被误伤了：' + joined)
 })
 
-test('流块类型：列表每行带句号，也要整块判出整张方', async () => {
+test('流块类型：列表每行带句号的整方，没加引号也照遮', async () => {
   // 列表一行一句、逐行到达时，单行只有一味药；必须把整块攒到空行再判，
   // 否则每行都会被单独遮掉，整方转述照样被误伤。
   const run = makeStream(readFileSync(INDEX, 'utf8'))([
@@ -253,8 +253,8 @@ test('流块类型：列表每行带句号，也要整块判出整张方', async
   assertBlocksOpened(out, '带句号的整方')
 
   const joined = out.filter((c) => c.type === 'text-delta').map((c) => c.text).join('')
-  assert.ok(joined.includes('**桂枝** 9g'), '整张方被误遮了：' + joined)
-  assert.ok(joined.includes('**甘草** 6g'), '整张方被误遮了：' + joined)
+  assert.ok(joined.includes('**桂枝** *'), '没加引号的整方应照遮：' + joined)
+  assert.ok(joined.includes('**甘草** *'), '没加引号的整方应照遮：' + joined)
   assert.ok(joined.includes('接着讲思路'), '正常句被误伤了：' + joined)
 })
 
@@ -312,32 +312,44 @@ test('不是中医会话：原样转发，一个字节都不动', async () => {
   assert.equal(out[1].text, '桂枝三两。', '非中医会话不许挖句')
   assert.ok(!JSON.stringify(out).includes('⚠️'), '非中医会话不许插提醒')
 })
-test('点评别人的方：原单上的剂量照念放行，模型自己新给的量照遮', async () => {
+test('点评别人的方：没加引号照遮，整段抄进「」才放过', async () => {
   // 原单是用户发来的（messages 里的 user 消息），上面印着 30g／15g／10g。
-  // 模型点评时逐味转述原单，这几个数是「别人的量」，一个都不许遮；
-  // 只有模型自己新加的「陈皮 6g」才算自己出量，照遮。
+  // 口径：转述别人原方也必须有引号；整段放进「」才算照念原文、出口放过，
+  // 没加引号的一律按自己复述处理，剂量照遮；模型自己新加的「陈皮 6g」永远照遮。
   const messages = [
     { role: 'system', content: '你是中医助手。' },
     { role: 'user', content: '这是我拿到的方：黄芪30g、当归15g、白术10g，请点评。' },
     { role: 'assistant', content: '好的，我先看方。' },
   ]
-  const run = makeStream(readFileSync(INDEX, 'utf8'), { options: { messages } })([
-    START,
-    TEXT('原单上黄芪 30g、当归 15g、白术 10g，三味都是补气健脾的路子。'),
-    TEXT('可以再加陈皮 6g，理气。'),
-    ...END,
-  ])
-  const out = await collect(run)
-  assertAllBlocksLegal(out, '点评原单')
-  assertBlocksOpened(out, '点评原单')
+  const run = (chunks) =>
+    makeStream(readFileSync(INDEX, 'utf8'), { options: { messages } })(chunks)
+  const joinedOf = (out) => out.filter((c) => c.type === 'text-delta').map((c) => c.text).join('')
 
-  const joined = out.filter((c) => c.type === 'text-delta').map((c) => c.text).join('')
-  assert.ok(joined.includes('黄芪 30g'), '原单上的量被遮了：' + joined)
-  assert.ok(joined.includes('当归 15g'), '原单上的量被遮了：' + joined)
-  assert.ok(joined.includes('白术 10g'), '原单上的量被遮了：' + joined)
-  assert.ok(joined.includes('陈皮 *'), '模型自己新给的量没遮：' + joined)
-  assert.ok(!joined.includes('6g'), '模型自己新给的量没遮干净：' + joined)
+  const quoted = await collect(
+    run([
+      START,
+      TEXT('原单上「黄芪 30g、当归 15g、白术 10g」三味，都是补气健脾的路子。'),
+      TEXT('可以再加陈皮 6g，理气。'),
+      ...END,
+    ]),
+  )
+  assertAllBlocksLegal(quoted, '点评原单')
+  assertBlocksOpened(quoted, '点评原单')
+  const q = joinedOf(quoted)
+  assert.ok(q.includes('黄芪 30g'), '引号里的原单被遮了：' + q)
+  assert.ok(q.includes('当归 15g'), '引号里的原单被遮了：' + q)
+  assert.ok(q.includes('白术 10g'), '引号里的原单被遮了：' + q)
+  assert.ok(q.includes('陈皮 *'), '模型自己新给的量没遮：' + q)
+  assert.ok(!q.includes('6g'), '模型自己新给的量没遮干净：' + q)
+
+  const bare = await collect(
+    run([START, TEXT('原单上黄芪 30g、当归 15g，剂量偏小。'), ...END]),
+  )
+  const b = joinedOf(bare)
+  assert.ok(!b.includes('30g') && !b.includes('15g'), '没加引号的转述漏遮：' + b)
+  assert.ok(b.includes('黄芪 *') && b.includes('当归 *'), '没加引号的转述应照遮：' + b)
 })
+
 test('会话认不出来但提示词带学理模式总纲：仍按中医会话遮数', async () => {
   const system = '【学理模式·总纲——本节优先于下文任何出方规则】……其余口径……'
   const run = makeStream(readFileSync(INDEX, 'utf8'), {
@@ -373,4 +385,24 @@ test('会话认不出来、提示词也不是学理模式：一个字节都不�
   const out = await collect(run)
   const joined = out.filter((c) => c.type === 'text-delta').map((c) => c.text).join('')
   assert.equal(joined, '生姜 25g，先煎十分钟。')
+})
+
+test('流块类型：引文被句号、换行切开，跨块也不许误遮', async () => {
+  // 引一整句原文时，句号往往先到；旧逻辑立刻在句号处切段，这一块只剩半个引文，
+  // 被判成「没加引号」，引文里的克数就被误遮了。切点现在会前移到开引号处等闭合。
+  const run = makeStream(readFileSync(INDEX, 'utf8'))([
+    START,
+    TEXT('（原文：「桂枝9克，芍药6克。'),
+    TEXT('共七剂。」）\n'),
+    TEXT('原文：「甘草6克\n'),
+    TEXT('生姜9克」\n'),
+    ...END,
+  ])
+  const out = await collect(run)
+  assertAllBlocksLegal(out, '引文跨块')
+  assertBlocksOpened(out, '引文跨块')
+  const joined = out.filter((c) => c.type === 'text-delta').map((c) => c.text).join('')
+  assert.ok(joined.includes('桂枝9克'), '引文里的剂量被误遮：' + joined)
+  assert.ok(joined.includes('甘草6克'), '引文里的剂量被误遮：' + joined)
+  assert.ok(!joined.includes('桂枝*'), '引文里的剂量被误遮：' + joined)
 })
