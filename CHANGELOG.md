@@ -1,5 +1,14 @@
 # 改动记录
 
+## 3.2.3
+
+### 许可换成「个人免费、禁止商用」
+
+- LICENSE 从 MIT 改为个人使用免费许可：自己用、自己改、免费转给朋友都行；卖钱、捆绑、收费服务、在诊所当生产工具用不行。
+- package.json 的 license 字段改为 `SEE LICENSE IN LICENSE`。
+- README 的「许可」段改成白话三条，条款看 LICENSE。
+- CONTRIBUTING 里「按 MIT 发布」同步改掉。
+
 ## 3.2.2
 
 ### 说明补上模拟问诊
