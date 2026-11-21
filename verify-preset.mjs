@@ -123,6 +123,7 @@ for (const m of [`id: '${pkg.name}'`, "var NS = 'dsh-tcm-xueli'", "form.set('kbP
   chk(`lib/client.js 含「${m}」`, clientJs.includes(m));
 chk('lib/client.js 不再有挡位按钮', !clientJs.includes("form.set('level'"));
 chk('问诊记录列表带题面与方名，好避开重复', (() => { const clinic = fs.readFileSync(path.join(PLUGIN, 'lib', 'clinic.js'), 'utf8'); return clinic.includes("'题面 '") && clinic.includes("'方 '"); })());
+chk('记录列表里的方名先过遮罩，不吐克数', (() => { const clinic = fs.readFileSync(path.join(PLUGIN, 'lib', 'clinic.js'), 'utf8'); return clinic.includes('blotDosage(String(r.prescribe))'); })());
 chk('模拟问诊有自己的干净面板（只画文字）', clientJs.includes('function QuietChat(') && clientJs.includes('function quietText('), '缺干净面板');
 chk('干净面板只给模拟问诊用，会话页仍走官方面板', clientJs.includes('E(QuietChat, {') && clientJs.includes('E(WbChatPane, {'), '干净面板没挂对地方');
 chk('干净面板认得宿主聊天快照', clientJs.includes("target('chat')") && clientJs.includes('Ctx.uiConversation.binding'));
@@ -133,6 +134,7 @@ chk('诊室从 node.data 取正文（宿主正文不在 node 顶层）', clientJ
 chk('简版读不到内容时能切回官方面板', clientJs.includes('function quietRowsOf(') && clientJs.includes("'官方面板'"));
 chk('每局抽随机锚点（六经＋病机＋诱因）', clientJs.includes('var SIM_ANCHOR_KEY') && clientJs.includes('function simPickAnchor(') && clientJs.includes('tcm-xueli-sim-anchors'));
 chk('随机锚点最近八局不重复', clientJs.includes('slice(-8)'));
+chk('随机锚点两个病机不重复', clientJs.includes('one !== a') && clientJs.includes('two[1]'));
 chk('开局指令带上锚点行与不重复提醒', clientJs.includes('simAnchorLine(lv)') && clientJs.includes('【不许重复】'));
 
 // ---------- 6. 预设声明 ----------
