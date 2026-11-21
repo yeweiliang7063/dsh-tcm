@@ -211,6 +211,9 @@ chk('全量版会话里学习版规则不生效', fs.readFileSync(path.join(PLUG
 chk('识版导出 versionOf', fs.readFileSync(path.join(PLUGIN, 'lib', 'preset-scope.js'), 'utf8').includes('export function versionOf'));
 chk('资料库根目录由代码锁定', fs.existsSync(path.join(PLUGIN, 'lib', 'kb-root.js')) && fs.readFileSync(path.join(PLUGIN, 'lib', 'kb-index.js'), 'utf8').includes('childOf(root, INDEX_FILE)') && fs.readFileSync(path.join(PLUGIN, 'lib', 'records.js'), 'utf8').includes('insideRoot(kb, dir)'));
 chk('不再按文件夹名字认库', !fs.readFileSync(path.join(PLUGIN, 'lib', 'client.js'), 'utf8').includes('KB_DIR_NAME'));
+chk('各处提醒使用新的设置项名称', prefix.includes('设置 → 中医 · 经方（学习版）｜资料库目录') && !prefix.includes('中医 · 经方｜'));
+chk('首次使用提醒写清「第一次用」与「点保存」', indexSrc.includes('这是第一次用') && indexSrc.includes('再点保存'));
+chk('设置页保留首次使用的黄条提示', fs.readFileSync(path.join(PLUGIN, 'lib', 'client.js'), 'utf8').includes('第一次用还没有设定资料库'));
 chk('六部脉正常选项固定出现', prefix.includes('「数（跳得快）」「缓（跳得慢）」「不急不慢」') && prefix.includes('「浮（一按就摸到）」「沉（按到筋骨才摸到）」「中（不浮不沉）」'));
 chk('六部脉默认分两轮问快慢与深浅', prefix.includes('第一轮六部一部一问') && prefix.includes('第二轮再一部一问'));
 
