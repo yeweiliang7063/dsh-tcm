@@ -133,7 +133,7 @@ chk('开局气泡在诊室里只留局号行、锈点不露给医生', clientJs.
 chk('诊室面板把打赏块裁掉，不露裸网址', clientJs.includes('function withoutGift(') && clientJs.includes("indexOf('请作者喝杯茶'"));
 chk('诊室样式只有一套（没有重复的 quiet 规则）', clientJs.split('.sim-quiet{').length === 2, 'sim-quiet 样式重复');
 chk('诊室从 node.data 取正文（宿主正文不在 node 顶层）', clientJs.includes('node.data || node'));
-chk('简版读不到内容时能切回官方面板', clientJs.includes('function quietRowsOf(') && clientJs.includes("'官方面板'"));
+chk('简版读不到内容时就地摊开现场（不再偷偷切官方面板）', clientJs.includes('function quietRowsOf(') && clientJs.includes('sim-quiet-diag') && !clientJs.includes('先用官方面板'));
 chk('等病人时挂一行提示，不留空白', clientJs.includes('正在叫病人开口') && clientJs.includes('病人正在回应'));
 const clinicJs = fs.readFileSync(path.join(PLUGIN, 'lib', 'clinic.js'), 'utf8');
 chk('锚点改由工具返回、不再拼进开局消息', clinicJs.includes('xueli_draw_anchor') && clinicJs.includes('ANCHOR_LIUJING') && !clientJs.includes('simAnchorLine') && !clientJs.includes('【不许重复】') && !clientJs.includes('本局随机锚点'), '锚点进开局消息就是剧透');
