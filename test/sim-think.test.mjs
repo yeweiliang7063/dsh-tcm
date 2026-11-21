@@ -112,7 +112,7 @@ test('消息没带 source 也认，交卷带个句号也认', async () => {
   assert.equal(agent.model.current().reasoningEffort, 'high', '不能因为多了个标点就不还原')
 })
 
-test('医生答完题（没打「交卷」两个字）也算交卷：长回答当场还原', async () => {
+test('医生答完题（没打「交卷」两个字）也算交卷：只认治法/方药，长问句不算', async () => {
   const agent = fakeAgent('deepseek', 'deepseek-v4', 'high')
   const ctx = fakeCtx(agent, ['off', 'high'])
   const { thinker } = createSimThinker(ctx, { versionOf: () => 'xueli' })
@@ -126,8 +126,12 @@ test('医生答完题（没打「交卷」两个字）也算交卷：长回答�
   thinker(session, open('口苦吗？'))
   assert.equal(agent.model.current().reasoningEffort, 'off', '问句不该提前开思考')
 
-  // 一整段作答：当场还原，让点评那份带思考
-  thinker(session, open('病位在少阳，寒热往来、口苦咽干目眩，治法当和解少阳。主方小柴胡汤：柴胡、黄芩、半夏、人参、甘草、生姜、大枣。胸中烦而不呕者去半夏、人参加栝楼实。'))
+  // 长问句/长描述，但没点治法方药：也不算交卷（不按字数判）
+  thinker(session, open('我想确认一下：这个人口苦、咽干、目眩、寒热往来，胸胁苦满，吃饭也少，这些是不是偏向少阳这一路？还要不要再问问大便和小便的情况？'))
+  assert.equal(agent.model.current().reasoningEffort, 'off', '长问句不许当成答完')
+
+  // 明确点了治法与主方：当场还原，让点评那份带思考
+  thinker(session, open('病位在少阳，寒热往来、口苦咽干目眩，治法当和解少阳。主方小柴胡汤：柴胡、黄芩、半夏、人参、甘草、生姜、大枣。'))
   assert.equal(agent.model.current().reasoningEffort, 'high', '答完就还原，点评才有思考')
 
   // 短句里点了治法/取穴也算
