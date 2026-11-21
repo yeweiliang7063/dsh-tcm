@@ -32,3 +32,16 @@ test('普通对话的提示词不算中医会话', () => {
   assert.equal(looksTcmPrompt(undefined), false)
   assert.equal(looksTcmPrompt(null), false)
 })
+test('两版分得清：学习版、全量版各认各的，认不出就回空', async () => {
+  const { versionOf } = await import('../lib/preset-scope.js')
+  const withPreset = (id) => ({ get: (key) => (key === 'agentPresets' ? { presetForSession: () => id } : undefined) })
+  assert.equal(versionOf(withPreset('dsh-tcm-xueli'), { session: {} }), 'xueli')
+  assert.equal(versionOf(withPreset('dsh-qihuangjingfang'), { session: {} }), 'full')
+  assert.equal(versionOf(withPreset('中医 · 经方（学习版）'), { session: {} }), 'xueli')
+  assert.equal(versionOf(withPreset('中医 · 经方'), { session: {} }), '')
+  const headerOnly = {
+    get: (key) => (key === 'agentPresets' ? { presetForSession: () => null } : undefined),
+  }
+  assert.equal(versionOf(headerOnly, { session: { header: { agentPreset: 'dsh-qihuangjingfang' } } }), 'full')
+  assert.equal(versionOf(headerOnly, { session: { header: {} } }), '')
+})

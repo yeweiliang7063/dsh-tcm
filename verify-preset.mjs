@@ -193,14 +193,26 @@ chk('跳过不许撤掉证法穴', prefix.includes('⑸跳过项不许拖垮五�
 chk('六经与时令必须排在最前', prefix.includes('21.5 问诊齐了之后，开头的次序是固定的') && prefix.includes('「## 六经与时令」这一节'));
 
 // ---------- 6.5 打赏码与六部脉计数 ----------
-chk('打赏区只在出结论那份回答末尾', prefix.includes('打赏区只在「出结论的那一份回答」末尾加') && prefix.includes('问诊轮、追问轮、代转话的回合，都不许出现收款码') && prefix.includes('打赏全凭自愿'));
-chk('打赏用同源图片地址', prefix.includes('![支付宝打赏码](/dsh-tcm-xueli/dashang/alipay.jpg)') && prefix.includes('![微信打赏码](/dsh-tcm-xueli/dashang/wechat.jpg)'));
-chk('打赏码不许换图改址', prefix.includes('图片地址一个字都不许改'));
+const dashangSrc = fs.readFileSync(path.join(PLUGIN, 'lib', 'dashang.js'), 'utf8');
+const indexSrc = fs.readFileSync(path.join(PLUGIN, 'lib', 'index.js'), 'utf8');
+chk('打赏区由插件代码追加', dashangSrc.includes('export function dashangBlock') && indexSrc.includes('dashangGiftText') && indexSrc.includes("chunk.type === 'finish'"));
+chk('打赏只补在结论那份回答', dashangSrc.includes('export function looksConclusion') && dashangSrc.includes("startsWith('**结论**')") && indexSrc.includes('looksConclusion(head)'));
+chk('打赏网址带实时端口', dashangSrc.includes('listenedPort') && dashangSrc.includes('config?.port') && !/127\.0\.0\.1:\d{4,5}\/dsh-tcm-xueli/.test(dashangSrc));
+chk('打赏块含两张码与自愿说明', dashangSrc.includes('![支付宝打赏码]') && dashangSrc.includes('![微信打赏码]') && dashangSrc.includes('打赏全凭自愿'));
+chk('提示词不再让模型写打赏', !prefix.includes('alipay.jpg') && !prefix.includes('![支付宝打赏码]') && prefix.includes('打赏区由插件自动补'));
+chk('问诊轮不写打赏', prefix.includes('打赏区由插件加，不用你写'));
 chk('两张打赏图随包发布', fs.existsSync(path.join(PLUGIN, 'assets', 'dashang', 'alipay.jpg')) && fs.existsSync(path.join(PLUGIN, 'assets', 'dashang', 'wechat.jpg')));
 chk('打赏通道代码随包发布', fs.existsSync(path.join(PLUGIN, 'lib', 'dashang.js')));
-chk('打赏通道接进宿主', fs.readFileSync(path.join(PLUGIN, 'lib', 'index.js'), 'utf8').includes('mountDashangRoute'));
+chk('打赏通道接进宿主', indexSrc.includes('mountDashangRoute'));
 chk('六部脉合起来只算一项', prefix.includes('「脉象」就是这十项里的一项') && prefix.includes('不拆成六项去报数'));
-chk('六部怎么问都不许超过八问', prefix.includes('一轮都不许超过八问'));
+chk('六部怎么问都不许超过八问', prefix.includes('一轮六题，不会超过八问'));
+chk('两版工具不许串（学习版侧）', fs.readFileSync(path.join(PLUGIN, 'lib', 'clinic.js'), 'utf8').includes("versionOf(ctx, context?.agent) !== 'full'"));
+chk('全量版会话里学习版规则不生效', fs.readFileSync(path.join(PLUGIN, 'lib', 'index.js'), 'utf8').includes("versionOf(ctx, options?.sessionId) === 'full'"));
+chk('识版导出 versionOf', fs.readFileSync(path.join(PLUGIN, 'lib', 'preset-scope.js'), 'utf8').includes('export function versionOf'));
+chk('资料库根目录由代码锁定', fs.existsSync(path.join(PLUGIN, 'lib', 'kb-root.js')) && fs.readFileSync(path.join(PLUGIN, 'lib', 'kb-index.js'), 'utf8').includes('childOf(root, INDEX_FILE)') && fs.readFileSync(path.join(PLUGIN, 'lib', 'records.js'), 'utf8').includes('insideRoot(kb, dir)'));
+chk('不再按文件夹名字认库', !fs.readFileSync(path.join(PLUGIN, 'lib', 'client.js'), 'utf8').includes('KB_DIR_NAME'));
+chk('六部脉正常选项固定出现', prefix.includes('「数（跳得快）」「缓（跳得慢）」「不急不慢」') && prefix.includes('「浮（一按就摸到）」「沉（按到筋骨才摸到）」「中（不浮不沉）」'));
+chk('六部脉默认分两轮问快慢与深浅', prefix.includes('第一轮六部一部一问') && prefix.includes('第二轮再一部一问'));
 
 // ---------- 6.6 结构整理与三处医学补充 ----------
 chk('口渴要问喜温喜冷', prefix.includes('想喝热的还是凉的') && prefix.includes('口渴喜温喜冷是分寒热虚实的一枚砝码'));
@@ -214,9 +226,9 @@ chk('16.1 三组圈号各自顺号', (() => {
   const got = (prefix.slice(i, j).match(/[①-⑳]/g) || []).join('');
   return got === '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭';
 })(), '写作纪律一组须 ①–⑭ 顺号无重号');
-chk('模拟问诊暂停句带上打赏区', presetPrefix.includes('末尾两行声明与打赏区一律暂停'));
+chk('模拟问诊暂停句写明打赏由插件管', presetPrefix.includes('末尾两行声明一律暂停') && presetPrefix.includes('打赏区由插件自动补'));
 chk('第 21 条里 ⑤ 的后半归成 ⑤之三', prefix.includes('⑤之三，第三、四步的说法要能落地') && !prefix.includes('⑤第三、四步的说法要能落地'));
-chk('问诊轮不许写正文那句摘出末尾声明', prefix.includes('末尾两行声明照常写；打赏区只在出结论那一份回答的末尾出现'));
+chk('问诊轮不许写正文那句摘出末尾声明', prefix.includes('末尾两行声明照常写；打赏区由插件加，不用你写'));
 
 chk('前说后说只留一条', (prefix.split('前说后说必须对得上').length - 1) === 1);
 chk('24.1 紧跟第 24 条', (() => {
@@ -248,7 +260,7 @@ try {
 note(`node_modules/${MOD} 指向当前插件目录`, sameTarget, INSTALLED);
 
 // ---------- 8. 副本一致性 ----------
-const files = ['package.json', 'cordis.patch.yml', 'lib/index.js', 'lib/gear.js', 'lib/dosage-guard.js', 'lib/preset.js', 'lib/client.js', 'lib/kb-index.js', 'lib/platform.js', 'lib/corpus.js', 'lib/records.js', 'lib/book-text.js', 'lib/book-classify.js', 'lib/auto-file.js', 'lib/clinic.js', 'lib/search.js', 'lib/preset-scope.js', 'lib/season.js', 'lib/dashang.js', 'lib/build-index.mjs'];
+const files = ['package.json', 'cordis.patch.yml', 'lib/index.js', 'lib/gear.js', 'lib/dosage-guard.js', 'lib/preset.js', 'lib/client.js', 'lib/kb-index.js', 'lib/platform.js', 'lib/corpus.js', 'lib/records.js', 'lib/book-text.js', 'lib/book-classify.js', 'lib/auto-file.js', 'lib/clinic.js', 'lib/search.js', 'lib/preset-scope.js', 'lib/season.js', 'lib/dashang.js', 'lib/kb-root.js', 'lib/build-index.mjs'];
 // 从 npm/git 装的副本会被 git 换成 CRLF，源目录是 LF；比内容不比行尾
 const md5 = (p) => createHash('md5').update(fs.readFileSync(p, 'utf8').replaceAll(String.fromCharCode(13) + String.fromCharCode(10), String.fromCharCode(10))).digest('hex');
 let diff = 0;

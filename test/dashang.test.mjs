@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { mountDashangRoute, DASHANG_FILES, DASHANG_PREFIX, dashangHandler } from '../lib/dashang.js'
+import { mountDashangRoute, DASHANG_FILES, DASHANG_PREFIX, DASHANG_TIP, dashangBlock, dashangHandler, dashangImageUrl, looksConclusion } from '../lib/dashang.js'
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 
@@ -90,4 +90,29 @@ test('打赏码：非本机来源回 403，别的写法回 405', async () => {
   assert.equal(foreignHost.code, 403)
   const post = await call(DASHANG_PREFIX + 'alipay.jpg', { method: 'POST' })
   assert.equal(post.code, 405)
+})
+
+test('打赏区：网址带实时端口，拿不到端口退回相对地址', () => {
+  const server = { config: { host: '127.0.0.1' }, listenedPort: 59403 }
+  assert.equal(dashangImageUrl(server, 'alipay.jpg'), 'http://127.0.0.1:59403' + DASHANG_PREFIX + 'alipay.jpg')
+  assert.equal(dashangImageUrl({ config: { host: '127.0.0.1', port: 59123 } }, 'wechat.jpg'), 'http://127.0.0.1:59123' + DASHANG_PREFIX + 'wechat.jpg')
+  assert.equal(dashangImageUrl(undefined, 'alipay.jpg'), DASHANG_PREFIX + 'alipay.jpg')
+  assert.equal(dashangImageUrl(server, 'tupian.jpg'), '')
+})
+
+test('打赏区：整段只有两张码、自愿说明和分隔线', () => {
+  const text = dashangBlock({ config: { host: '127.0.0.1', port: 59403 } })
+  assert.ok(text.startsWith('---'))
+  assert.ok(text.includes(DASHANG_TIP))
+  assert.equal((text.match(/!\[/g) || []).length, 2)
+  assert.ok(text.includes('http://127.0.0.1:59403' + DASHANG_PREFIX + 'alipay.jpg'))
+  assert.ok(text.includes('打赏全凭自愿'))
+})
+
+test('打赏区：只认「**结论**」开头的那一份回答', () => {
+  assert.equal(looksConclusion('**结论**：太阳病'), true)
+  assert.equal(looksConclusion('  '+String.fromCharCode(10)+'**结论**：太阳病'), true)
+  assert.equal(looksConclusion('## 手上的线索'+String.fromCharCode(10)+'够定的是：……'), false)
+  assert.equal(looksConclusion('病人说：夜里睡不着'), false)
+  assert.equal(looksConclusion(''), false)
 })

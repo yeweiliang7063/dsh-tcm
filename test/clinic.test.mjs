@@ -114,3 +114,34 @@ test('工具参数：难度、方向、结论只能填规定的那几个，不�
   assert.deepEqual(seen.xueli_finish_round.parameters.properties.verdict.enum, ['过关', '边缘', '不过关'])
   release()
 })
+
+test('两版工具不许串：全量版会话里这三件工具不挂上去', async () => {
+  const { registerClinicTools } = await import('../lib/clinic.js')
+  const opts = []
+  const tools = {
+    register(definition, options) {
+      opts.push({ name: definition.name, options })
+      return () => {}
+    },
+  }
+  const registry = (presetId) => ({ presetForSession: () => presetId })
+  const make = (presetId) => ({
+    get: (key) => (key === 'tools' ? tools : key === 'agentPresets' ? registry(presetId) : undefined),
+    logger: { info() {}, warn() {} },
+  })
+  await registerClinicTools(make('dsh-qihuangjingfang'), { begin: async () => ({}), end: async () => ({}), list: async () => [] })
+  const full = opts.at(-1).options.when
+  assert.equal(typeof full, 'function', '注册时要带上启停条件')
+  assert.equal(full({ agent: { session: {} } }), false, '全量版会话里不该出现学习版工具')
+
+  await registerClinicTools(make('dsh-tcm-xueli'), { begin: async () => ({}), end: async () => ({}), list: async () => [] })
+  const xueli = opts.at(-1).options.when
+  assert.equal(xueli({ agent: { session: {} } }), true, '学习版会话里要照常出现')
+
+  await registerClinicTools(
+    { get: (key) => (key === 'tools' ? tools : undefined), logger: { info() {}, warn() {} } },
+    { begin: async () => ({}), end: async () => ({}), list: async () => [] },
+  )
+  const unknown = opts.at(-1).options.when
+  assert.equal(unknown({ agent: { session: {} } }), true, '认不出是哪一版时按原样挂，不乱拦')
+})
