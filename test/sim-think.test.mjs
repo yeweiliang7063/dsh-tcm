@@ -180,7 +180,7 @@ test('诊室面板代发的开局（自定义 source）不许被当成通知闭�
   assert.equal(simQuiet('sim-source'), true)
 })
 
-test('医生在答题（没问的意思）就闭嘴，一问就恢复', () => {
+test('医生一开始写答卷，就一直闭嘴到交卷', () => {
   const agent = fakeAgent('deepseek', 'deepseek-v4', 'medium')
   const ctx = fakeCtx(agent, ['off', 'minimal', 'low', 'medium'])
   const { thinker } = createSimThinker(ctx, { versionOf: () => 'xueli' })
@@ -192,11 +192,13 @@ test('医生在答题（没问的意思）就闭嘴，一问就恢复', () => {
   say('请问您哪里不舒服？')
   assert.equal(simQuiet('sim-ask'), false, '问句要照常转病人')
   say('口干口苦，脉弦，这是少阳证，治法和胃降逆，主方小柴胡汤加减，取穴太冲、阳陵泉。')
-  assert.equal(simQuiet('sim-ask'), true, '答题时闭嘴')
+  assert.equal(simQuiet('sim-ask'), true, '开始答题就闭嘴')
   say('请把舌头伸出来我看看')
-  assert.equal(simQuiet('sim-ask'), false, '要病人配合也是问')
+  assert.equal(simQuiet('sim-ask'), true, '答卷中间插一句问话，也照样闭嘴，不许放出半句')
   say('交卷。')
   assert.equal(simQuiet('sim-ask'), false, '交卷要说话')
+  say('那如果只用和解少阳，不用小柴胡汤，行不行？')
+  assert.equal(simQuiet('sim-ask'), false, '交完卷重新开问，问句照常转病人')
 })
 
 test('闭嘴只按一条：没有提问的意思才闭嘴（通知也一样）', async () => {

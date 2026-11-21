@@ -162,6 +162,10 @@ chk('答题期间模型不许自己发旁白', presetPrefix.includes('答题期�
 chk('提示词也只认「交卷」两个字', presetPrefix.includes('只有医生明确说「交卷」') && presetPrefix.includes('③是「交卷」——才切裁判'));
 chk('开局只看「模拟问诊」开头、交卷只看两个字', (() => { const f = fs.readFileSync('lib/sim-think.js', 'utf8'); return f.includes('const OPEN_MARK = /^') && f.includes('模拟问诊/u') && f.includes("return String(said || '').includes(HAND_IN)") })());
 chk('答题期间病人和裁判都不许插话', presetPrefix.includes('【答题期间病人和裁判都不许插话】') && presetPrefix.includes('是在答题（陈述症状、讲病机、写治法方药、取穴、整段分析）') && presetPrefix.includes('病人不许自己开口，裁判不许提前点评'));
+chk('医生开始写答卷就一直闭嘴到交卷', (() => {
+  const code = fs.readFileSync(path.join(PLUGIN, 'lib', 'sim-think.js'), 'utf8')
+  return code.includes('export function nextLatch') && code.includes('const answering = new Set()') && code.includes('answering.delete(sessionId)')
+})())
 chk('只有医生打「交卷」才切点评（不再按内容猜）', (() => { const think = fs.readFileSync(path.join(PLUGIN, 'lib', 'sim-think.js'), 'utf8'); return think.includes('function wantsHandIn(said)') && think.includes('if (!wantsHandIn(said))') && !think.includes('isQuestion'); })());
 chk('调档只管模拟问诊这一局，普通聊天不碰', (() => { const think = fs.readFileSync(path.join(PLUGIN, 'lib', 'sim-think.js'), 'utf8');
 chk('抽过的锚点跨重启记得住（写进资料库医案目录）', (() => { const rec = fs.readFileSync(path.join(PLUGIN, 'lib', 'records.js'), 'utf8'); const idx = fs.readFileSync(path.join(PLUGIN, 'lib', 'index.js'), 'utf8'); return rec.includes('export function readSeenAnchors') && rec.includes('export function appendSeenAnchor') && idx.includes('loadSeen: () => readSeenAnchors(currentPath(config))') && idx.includes('saveSeen:'); })());
