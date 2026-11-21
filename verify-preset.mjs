@@ -240,6 +240,9 @@ chk('全量版会话里学习版规则不生效', fs.readFileSync(path.join(PLUG
 chk('识版导出 versionOf', fs.readFileSync(path.join(PLUGIN, 'lib', 'preset-scope.js'), 'utf8').includes('export function versionOf'));
 chk('资料库根目录由代码锁定', fs.existsSync(path.join(PLUGIN, 'lib', 'kb-root.js')) && fs.readFileSync(path.join(PLUGIN, 'lib', 'kb-index.js'), 'utf8').includes('childOf(root, INDEX_FILE)') && fs.readFileSync(path.join(PLUGIN, 'lib', 'records.js'), 'utf8').includes('insideRoot(kb, dir)'));
 chk('开局关掉思考、交卷开到 High', (() => { const think = fs.readFileSync(path.join(PLUGIN, 'lib', 'sim-think.js'), 'utf8'); const index = fs.readFileSync(path.join(PLUGIN, 'lib', 'index.js'), 'utf8'); return think.includes("'【模拟问诊 · 开局】'") && think.includes("['off', 'minimal', 'low']") && think.includes('createSimThinker') && think.includes("HAND_IN_LEVEL = 'high'") && think.includes('raiseHigh(ctx, known, previous)') && index.includes('createSimThinker(ctx, { versionOf })'); })());
+chk('裁判评分：写克数不扣分，只看君臣佐使与加减', prefix.includes('医生自己写了每味药的克数，不算扣分项') && prefix.includes('君臣佐使站不站得住') && prefix.includes('加减对不对证'));
+chk('裁判不要求医生引经典原文', prefix.includes('不要求医生引经典原文') && prefix.includes('一句没引，也不算错'));
+chk('点评不许写出可照抓的处方笺', prefix.includes('不写先煎、后下、包煎、另煎') && prefix.includes('不写几剂几服') && prefix.includes('破了自己判不合格'));
 chk('这一局的病人子会话也关思考', (() => { const think = fs.readFileSync(path.join(PLUGIN, 'lib', 'sim-think.js'), 'utf8'); return think.includes('simSessions.has(parent)') && think.includes('subagent'); })());
 chk('不再按文件夹名字认库', !fs.readFileSync(path.join(PLUGIN, 'lib', 'client.js'), 'utf8').includes('KB_DIR_NAME'));
 chk('各处提醒使用新的设置项名称', prefix.includes('设置 → 中医 · 经方（学习版）｜资料库目录') && !prefix.includes('中医 · 经方｜'));
