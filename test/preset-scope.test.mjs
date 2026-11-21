@@ -39,6 +39,9 @@ test('两版分得清：学习版、全量版各认各的，认不出就回空',
   assert.equal(versionOf(withPreset('dsh-qihuangjingfang'), { session: {} }), 'full')
   assert.equal(versionOf(withPreset('中医 · 经方（学习版）'), { session: {} }), 'xueli')
   assert.equal(versionOf(withPreset('中医 · 经方'), { session: {} }), '')
+  // 老版全量版的预设 id 就叫 qihuang，也要认成全量版，不然它的工具会被张冠李戴。
+  assert.equal(versionOf(withPreset('qihuang'), { session: {} }), 'full')
+  assert.equal(versionOf(withPreset('qihuang-xueli'), { session: {} }), '')
   const headerOnly = {
     get: (key) => (key === 'agentPresets' ? { presetForSession: () => null } : undefined),
   }

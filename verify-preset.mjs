@@ -122,6 +122,13 @@ const clientJs = fs.readFileSync(path.join(PLUGIN, 'lib', 'client.js'), 'utf8');
 for (const m of [`id: '${pkg.name}'`, "var NS = 'dsh-tcm-xueli'", "form.set('kbPath'", '学理模式', "var SIM_PANEL = 'xueli-sim'", "label: function () { return '模拟问诊'; }", "var SIM_CHAT_SLOT = 'xueli.sim.chat'"])
   chk(`lib/client.js 含「${m}」`, clientJs.includes(m));
 chk('lib/client.js 不再有挡位按钮', !clientJs.includes("form.set('level'"));
+chk('模拟问诊有自己的干净面板（只画文字）', clientJs.includes('function QuietChat(') && clientJs.includes('function quietText('), '缺干净面板');
+chk('干净面板只给模拟问诊用，会话页仍走官方面板', clientJs.includes('E(QuietChat, {') && clientJs.includes('E(WbChatPane, {'), '干净面板没挂对地方');
+chk('干净面板认得宿主聊天快照', clientJs.includes("target('chat')") && clientJs.includes('Ctx.uiConversation.binding'));
+chk('诊室面板把打赏块裁掉，不露裸网址', clientJs.includes('function withoutGift(') && clientJs.includes("indexOf('请作者喝杯茶'"));
+chk('诊室样式只有一套（没有重复的 quiet 规则）', clientJs.split('.sim-quiet{').length === 2, 'sim-quiet 样式重复');
+chk('诊室从 node.data 取正文（宿主正文不在 node 顶层）', clientJs.includes('node.data || node'));
+chk('简版读不到内容时能切回官方面板', clientJs.includes('function quietRowsOf(') && clientJs.includes("'官方面板'"));
 
 // ---------- 6. 预设声明 ----------
 const raw = fs.readFileSync(path.join(PLUGIN, 'cordis.patch.yml'), 'utf8');
@@ -142,6 +149,9 @@ chk('预设提示词含【模拟问诊】段落', presetPrefix.includes('【模�
 chk('预设提示词写明开局指令格式', presetPrefix.includes('【模拟问诊 · 开局】'));
 chk('预设提示词让裁判记局（xueli_begin_round / xueli_finish_round）', presetPrefix.includes('xueli_begin_round') && presetPrefix.includes('xueli_finish_round'));
 chk('模拟问诊仍守住「不给剂量」', presetPrefix.includes('不给剂量'));
+chk('造病例不许查书（硬规在预设里）', presetPrefix.includes('【造病例不许查书】') && presetPrefix.includes('检索类工具一个都不许调'), '缺造病例不查书的硬规');
+chk('病人第一句只讲难受，不许提方名药名', presetPrefix.includes('不许提方名、药名、条文号、证型名'));
+chk('转话时心里的方名条文不许写进面板', presetPrefix.includes('一个字都不许写进面板'));
 chk('预设说明写明仅供学习研究', String(cfg.description).includes('仅供学习研究'));
 const rawPrefix = ((cfg.plugins || []).find((x) => x.id === 'persona') || {}).config?.prefix || '';
 chk('persona 提示词以常驻口径变量开头', rawPrefix.trimStart().startsWith('{{tcm_gear_guard}}'));
