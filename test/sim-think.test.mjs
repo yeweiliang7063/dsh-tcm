@@ -210,6 +210,63 @@ test('开局那句话不看预设也认，只要有「交卷」两个字就算�
   assert.equal(agent.model.current().reasoningEffort, 'medium', '只要带着交卷两个字就还原')
 })
 
+test('开局之后第一句就是「交卷」也认：当场开到 High，这一局收尾', async () => {
+  const agent = fakeAgent('deepseek', 'deepseek-v4', 'medium')
+  const ctx = fakeCtx(agent, ['off', 'minimal', 'low', 'medium', 'high'])
+  const { thinker } = createSimThinker(ctx, { versionOf: () => 'xueli' })
+  const session = { id: 'sim-first-handin' }
+
+  thinker(session, open('【模拟问诊 · 开局】普通｜方药｜20261121-77'))
+  await tick()
+  assert.equal(agent.model.current().reasoningEffort, 'off')
+
+  thinker(session, open('交卷'))
+  assert.equal(agent.model.current().reasoningEffort, 'high', '第一句就是交卷，也要开 High')
+  assert.equal(simQuiet('sim-first-handin'), false, '交卷这一轮要放开')
+})
+
+test('开局之后第一句就是「答卷」：直接闭嘴，不白放一轮', () => {
+  const agent = fakeAgent('deepseek', 'deepseek-v4', 'medium')
+  const ctx = fakeCtx(agent, ['off', 'minimal', 'low', 'medium'])
+  const { thinker } = createSimThinker(ctx, { versionOf: () => 'xueli' })
+  const session = { id: 'sim-first-daanjuan' }
+
+  thinker(session, open('【模拟问诊 · 开局】普通｜方药｜20261121-78'))
+  thinker(session, open('答卷：口干口苦，少阳证，小柴胡汤。'))
+  assert.equal(simQuiet('sim-first-daanjuan'), true, '第一句答卷就要闭嘴，不能白放过去')
+})
+
+test('普通会话里问一句「模拟问诊怎么开始」不算开局', async () => {
+  const agent = fakeAgent('deepseek', 'deepseek-v4', 'medium')
+  const ctx = fakeCtx(agent, ['off', 'minimal', 'low', 'medium'])
+  const { thinker } = createSimThinker(ctx, { versionOf: () => 'xueli' })
+  const session = { id: 'plain-mention' }
+
+  thinker(session, open('模拟问诊怎么开始？'))
+  thinker(session, open('【模拟问诊】这功能有点意思'))
+  await tick()
+  assert.equal(agent.model.current().reasoningEffort, 'medium', '只是提到这几个字，不许当开局')
+  assert.equal(simQuiet('plain-mention'), false, '也不许把这一轮正文清空')
+})
+
+test('点评打完再把档位交回去：下一句闲聊不再跑 High', async () => {
+  const agent = fakeAgent('deepseek', 'deepseek-v4', 'medium')
+  const ctx = fakeCtx(agent, ['off', 'minimal', 'low', 'medium', 'high'])
+  const { thinker } = createSimThinker(ctx, { versionOf: () => 'xueli' })
+  const session = { id: 'sim-after' }
+
+  thinker(session, open('【模拟问诊 · 开局】简单｜方药｜20261121-79'))
+  await tick()
+  thinker(session, open('请问怕冷吗？'))
+  thinker(session, open('交卷'))
+  assert.equal(agent.model.current().reasoningEffort, 'high', '点评这一轮要 High')
+
+  // 点评打完了，医生换话题：档位交回原来的 medium
+  thinker(session, open('谢谢，今天就到这儿'))
+  await tick()
+  assert.equal(agent.model.current().reasoningEffort, 'medium', '点评完要把档位交回去，别一直 High')
+})
+
 test('拿到的 agent 不属于这一局（全量版/普通聊天的）就不碰', async () => {
   const other = fakeAgent('deepseek', 'deepseek-v4', 'high')
   other.session = { id: 'full-version-chat' }
