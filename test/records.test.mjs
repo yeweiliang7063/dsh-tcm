@@ -8,8 +8,12 @@ import {
   answerText,
   conversationFromEvents,
   createSessionRecorder,
+  dropGearEntry,
+  readGearState,
   recordSession,
   safeTitle,
+  saveGearEntry,
+  GEAR_FILE,
   RECORD_DIR,
 } from '../lib/records.js'
 
@@ -219,4 +223,36 @@ test('createSessionRecorder：按当前预设归档整段会话，标题来自�
   files = fs.readdirSync(path.join(kb, RECORD_DIR))
   assert.equal(files.length, 2, 'header 为创建时 cordis 时，应读当前预设投影')
   assert.ok(files.includes('切换预设后的会话.md'))
+})
+
+test('思考档位存根：记下、读回、清掉；库没设或文件坏了都不炸', () => {
+  const kb = fs.mkdtempSync(path.join(os.tmpdir(), 'qh-gear-'))
+  assert.deepEqual(readGearState(''), {}, '库没设回空')
+  assert.deepEqual(readGearState(kb), {}, '文件还没有回空')
+
+  assert.equal(saveGearEntry(kb, 's-1', 'medium'), true)
+  assert.equal(saveGearEntry(kb, 's-2', ''), true, '原来没有档位也记（空串）')
+  const state = readGearState(kb)
+  assert.equal(state['s-1'].restore, 'medium')
+  assert.equal(state['s-2'].restore, '')
+  assert.ok(state['s-1'].at > 0, '带时间戳')
+
+  assert.equal(dropGearEntry(kb, 's-1'), true)
+  assert.equal(dropGearEntry(kb, 's-1'), false, '清过的再清当没事')
+  assert.deepEqual(Object.keys(readGearState(kb)), ['s-2'])
+
+  // 文件坏了：读回空，不抛
+  fs.writeFileSync(path.join(kb, RECORD_DIR, GEAR_FILE), '{坏的', 'utf8')
+  assert.deepEqual(readGearState(kb), {}, '坏文件回空')
+  assert.equal(saveGearEntry(kb, 's-3', 'high'), true, '坏了也能重写')
+  assert.equal(readGearState(kb)['s-3'].restore, 'high')
+})
+
+test('思考档位存根最多留 50 条，新的挤掉旧的', () => {
+  const kb = fs.mkdtempSync(path.join(os.tmpdir(), 'qh-gear-many-'))
+  for (let i = 0; i < 60; i += 1) saveGearEntry(kb, 's-' + i, 'low')
+  const state = readGearState(kb)
+  assert.equal(Object.keys(state).length, 50, '只留 50 条')
+  assert.ok(state['s-59'], '最新的在')
+  assert.equal(state['s-0'], undefined, '最旧的被挤掉')
 })

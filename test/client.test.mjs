@@ -181,6 +181,7 @@ test('左栏隐藏：只认会话行、卸载时停表，不乱藏标题像问�
   assert.ok(!code.includes('[class*="sessionRow"]'), '不许用模糊类名去藏')
   assert.ok(!code.includes("el.style.display = 'none'"), '不许逐行改内联样式，会闪')
   assert.ok(!code.includes('isSimTitle(el.textContent)'), '不许拿整行文字判断')
-  assert.ok(code.includes('stopHideOwnRows(); stopHideSimRows();'), '卸载钩子里两个表都要停')
+  assert.ok(code.includes('return function () { stopHideSimRows(); };'), '卸载钩子里要停表')
+  assert.ok(!code.includes('stopHideOwnRows'), '不许再调不存在的停表函数')
   assert.ok(!/exports\.inject = \[[^\]]*'remote'/.test(code), '没用的 remote 注入要去掉')
 })

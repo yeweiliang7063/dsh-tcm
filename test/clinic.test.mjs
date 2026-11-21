@@ -130,6 +130,12 @@ test('两版工具不许串：全量版会话里这三件工具不挂上去', as
     logger: { info() {}, warn() {} },
   })
   await registerClinicTools(make('dsh-qihuangjingfang'), { begin: async () => ({}), end: async () => ({}), list: async () => [] })
+  const firstFour = opts.slice(-4)
+  assert.equal(firstFour.length, 4, '四个工具都要注册')
+  for (const one of firstFour) {
+    assert.equal(typeof one.options?.when, 'function', one.name + ' 注册时要带上启停条件')
+    assert.equal(one.options.when({ agent: { session: {} } }), false, one.name + ' 在全量版会话里不该出现')
+  }
   const full = opts.at(-1).options.when
   assert.equal(typeof full, 'function', '注册时要带上启停条件')
   assert.equal(full({ agent: { session: {} } }), false, '全量版会话里不该出现学习版工具')
@@ -193,4 +199,37 @@ test('最近几局也落一份：重启后 list_rounds 照样翻得到题面', a
   assert.equal(rows.length, 1)
   assert.equal(rows[0].caseSummary, '女 35 岁 头痛')
   assert.equal(rows[0].verdict, '过关')
+})
+
+test('打赏每判完十局一次：同一局重判不重复数，重启接着数', async () => {
+  let saved = { total: 0, giftAt: 0 }
+  const mk = () => createStore({
+    loadProgress: () => ({ ...saved }),
+    saveProgress: (p) => { saved = { ...p } },
+  })
+  const store = mk()
+  for (let i = 1; i <= 9; i += 1) {
+    await store.begin({ id: 'r-' + i, level: '普通', direction: '方药' })
+    await store.end({ id: 'r-' + i, verdict: '过关' })
+    assert.equal(store.takeGift('r-' + i), null, '第 ' + i + ' 局不摆打赏')
+  }
+  await store.begin({ id: 'r-10', level: '普通', direction: '方药' })
+  await store.end({ id: 'r-10', verdict: '过关' })
+  assert.equal(saved.total, 10, '判完十局')
+  // 同一局再判一次：不重复数，也不再补一次打赏
+  await store.end({ id: 'r-10', verdict: '过关' })
+  assert.equal(saved.total, 10, '同一局重判不重复数')
+  assert.deepEqual(store.takeGift('r-10'), { rounds: 10 }, '满十局那一局摆一次')
+  assert.equal(store.takeGift('r-10'), null, '同一局只摆一次')
+  assert.equal(store.takeGift('r-9'), null, '别的局不摆')
+
+  // 模拟重启：从盘上读回来接着数
+  const again = mk()
+  for (let i = 11; i <= 20; i += 1) {
+    await again.begin({ id: 'r-' + i, level: '简单', direction: '针药' })
+    await again.end({ id: 'r-' + i, verdict: '边缘' })
+  }
+  assert.equal(saved.total, 20)
+  assert.deepEqual(again.takeGift('r-20'), { rounds: 20 }, '第二十局再摆一次')
+  assert.equal(again.takeGift('r-19'), null)
 })

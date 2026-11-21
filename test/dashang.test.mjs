@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { mountDashangRoute, DASHANG_FILES, DASHANG_PREFIX, DASHANG_TIP, dashangBlock, dashangHandler, dashangImageUrl, needsGift } from '../lib/dashang.js'
+import { mountDashangRoute, DASHANG_FILES, DASHANG_PREFIX, DASHANG_TIP, dashangBlock, dashangHandler, dashangImageUrl } from '../lib/dashang.js'
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 
@@ -109,13 +109,16 @@ test('打赏区：整段只有两张码、自愿说明和分隔线', () => {
   assert.ok(text.includes('打赏全凭自愿'))
 })
 
-test('打赏区：给了分析就补，问诊轮与转话不补', () => {
-  const nl = String.fromCharCode(10)
-  assert.equal(needsGift('**结论**：太阳病'), true)
-  assert.equal(needsGift('  '+nl+'**结论**：太阳病'), true)
-  assert.equal(needsGift('**方向**（脉证不全）：太阳病'), true)
-  assert.equal(needsGift('**方向**（脉证不全，按您要求不再追问）：太阳病'), true)
-  assert.equal(needsGift('## 手上的线索'+nl+'够定的是：……'), false)
-  assert.equal(needsGift('病人说：夜里睡不着'), false)
-  assert.equal(needsGift(''), false)
+test('打赏区：满十局时多一句「判完几局」，平常不加', () => {
+  const server = { listenedPort: 59174, config: { host: '127.0.0.1' } }
+  const plain = dashangBlock(server)
+  assert.ok(plain.includes(DASHANG_TIP))
+  assert.ok(!plain.includes('判完'), '平常不加局数那句')
+
+  const full = dashangBlock(server, 10)
+  assert.ok(full.includes(DASHANG_TIP))
+  assert.ok(full.includes('判完 10 局'), '满十局要说明这一摆的来由')
+  assert.ok(full.includes('http://127.0.0.1:59174/dsh-tcm-xueli/dashang/alipay.jpg'), '两张码照旧是绝对网址')
+  assert.ok(full.includes('wechat.jpg'))
+  assert.equal(dashangBlock(server, 0), plain, '0 局等于平常')
 })

@@ -63,7 +63,8 @@ function makeStream(src, overrides = {}) {
       const currentPath = deps.currentPath || (() => 'D:/中医知识库')
       const looksTcmSession = deps.looksTcmSession || (() => true)
       const looksTcmPrompt = deps.looksTcmPrompt || (() => false)
-      const simQuiet = deps.simQuiet || (() => false)
+      // 闭嘴现在跟着开关实例走：出口问的是 muted.of，测试照旧经 deps.simQuiet 注入。
+      const muted = { of: deps.simQuiet || (() => false) }
       ${patched}
     })
   `
