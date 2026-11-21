@@ -206,6 +206,15 @@ test('开局那句话不看预设也认，只要有「交卷」两个字就算�
   assert.equal(agent.model.current().reasoningEffort, 'medium', '只要带着交卷两个字就还原')
 })
 
+test('拿到的 agent 不属于这一局（全量版/普通聊天的）就不碰', async () => {
+  const other = fakeAgent('deepseek', 'deepseek-v4', 'high')
+  other.session = { id: 'full-version-chat' }
+  const ctx = fakeCtx(other, ['off', 'high'])
+  const { thinker } = createSimThinker(ctx, { versionOf: () => 'xueli' })
+  const session = { id: 'sim-scope' }
 
-
-
+  thinker(session, open('【模拟问诊 · 开局】简单｜方药｜20261121-9'))
+  await tick()
+  assert.equal(other.model.current().reasoningEffort, 'high', '别的会话的思考一个字都不许动')
+  assert.equal(simQuiet('sim-scope'), true, '闭嘴只认这一局，照旧')
+})

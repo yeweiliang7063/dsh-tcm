@@ -1,4 +1,7 @@
 ## 3.2.13
+
+### 调档前先认会话归属（思考开关不许串到别的预设）
+`lib/sim-think.js` 的 `agentOf` 拿到 agent 后核对 `agent.session.id === sessionId`，对不上就不调档、只记一行日志；`resolveAgent` 偶尔给的是共享/默认的那个 agent，直接用它调档会把全量版或普通聊天的会话一起带上。单测与自检各加一条守这个归属。
 ### 交卷把裁判的思考开到 High
 
 - 开局照旧把这一局的思考压到最低；医生打「交卷」时，当场把档位开到 High（`lib/sim-think.js` 的 `HAND_IN_LEVEL = 'high'` 与 `raiseHigh(ctx, agent, previous)`），裁判那份回答照着 High 想。
