@@ -6,7 +6,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { blotDosage, hasDosage, maskDosage, quoteSafeCut } from '../lib/dosage-guard.js'
-import { GEAR_BLOCK_NOTICE, GEAR_GUARD, GEAR_MARK, PRESET_DESCRIPTION } from '../lib/gear.js'
+import { GEAR_GUARD, GEAR_MARK, PRESET_DESCRIPTION } from '../lib/gear.js'
 
 import { currentPath } from '../lib/index.js'
 import { corePlugins, minimalPreset } from '../lib/preset.js'
@@ -225,7 +225,6 @@ test('口径文案：四类约束都写到了', () => {
     assert.ok(GEAR_GUARD.includes(keyword), `口径锁缺「${keyword}」`)
   }
   assert.ok(GEAR_GUARD.includes(GEAR_MARK))
-  assert.ok(GEAR_BLOCK_NOTICE.includes('仅供学习研究'))
   assert.ok(PRESET_DESCRIPTION.startsWith('仅供学习研究使用'))
   // 口径文案本身不能出现「照抓就能用」的现代剂量示例（古文计量如「三两」「三升」是允许出现的）
   const MODERN = /(\d+(?:\.\d+)?|[一二三四五六七八九十百千半两几数]+)\s*(?:克|克重|钱|毫升|ml|mL|[gG](?![a-zA-Z]))/

@@ -84,7 +84,7 @@ if (!isLocalOnly) chk('有发布信息（private 未设时才有 publishConfig�
 
 // ---------- 2. 口径文案 ----------
 const gear = fs.readFileSync(path.join(PLUGIN, 'lib', 'gear.js'), 'utf8');
-for (const m of ['GEAR_GUARD', 'GEAR_BLOCK_NOTICE', 'MINIMAL_PREFIX', 'PRESET_DESCRIPTION', 'GEAR_GUARD_VAR', 'GEAR_MARK', 'KB_PATH_VAR'])
+for (const m of ['GEAR_GUARD', 'MINIMAL_PREFIX', 'PRESET_DESCRIPTION', 'GEAR_GUARD_VAR', 'GEAR_MARK', 'KB_PATH_VAR'])
   chk(`lib/gear.js 含「${m}」`, gear.includes(m));
 for (const m of ['仅供学习研究', '剂量：不自己给量', '不出处方笺', '针灸只给推荐穴位', '不写进针深浅', '按经方学理模式七段作答', '配伍禁忌必说', '药典用量警示必说', '复杂病症分主次必说'])
   chk(`口径锁含「${m}」`, gear.includes(m));
@@ -192,6 +192,46 @@ chk('不许摆两条路让人自己选', prefix.includes('「两条路，你选�
 chk('跳过不许撤掉证法穴', prefix.includes('⑸跳过项不许拖垮五格') && prefix.includes('把「等寒热定了再谈方穴」当收尾'));
 chk('六经与时令必须排在最前', prefix.includes('21.5 问诊齐了之后，开头的次序是固定的') && prefix.includes('「## 六经与时令」这一节'));
 
+// ---------- 6.5 打赏码与六部脉计数 ----------
+chk('打赏区只在出结论那份回答末尾', prefix.includes('打赏区只在「出结论的那一份回答」末尾加') && prefix.includes('问诊轮、追问轮、代转话的回合，都不许出现收款码') && prefix.includes('打赏全凭自愿'));
+chk('打赏用同源图片地址', prefix.includes('![支付宝打赏码](/dsh-tcm-xueli/dashang/alipay.jpg)') && prefix.includes('![微信打赏码](/dsh-tcm-xueli/dashang/wechat.jpg)'));
+chk('打赏码不许换图改址', prefix.includes('图片地址一个字都不许改'));
+chk('两张打赏图随包发布', fs.existsSync(path.join(PLUGIN, 'assets', 'dashang', 'alipay.jpg')) && fs.existsSync(path.join(PLUGIN, 'assets', 'dashang', 'wechat.jpg')));
+chk('打赏通道代码随包发布', fs.existsSync(path.join(PLUGIN, 'lib', 'dashang.js')));
+chk('打赏通道接进宿主', fs.readFileSync(path.join(PLUGIN, 'lib', 'index.js'), 'utf8').includes('mountDashangRoute'));
+chk('六部脉合起来只算一项', prefix.includes('「脉象」就是这十项里的一项') && prefix.includes('不拆成六项去报数'));
+chk('六部怎么问都不许超过八问', prefix.includes('一轮都不许超过八问'));
+
+// ---------- 6.6 结构整理与三处医学补充 ----------
+chk('口渴要问喜温喜冷', prefix.includes('想喝热的还是凉的') && prefix.includes('口渴喜温喜冷是分寒热虚实的一枚砝码'));
+chk('口渴那一问给了四个按钮', prefix.includes('想喝热水') && prefix.includes('想喝凉水') && prefix.includes('口渴但不想咽'));
+chk('基础项补宿疾用药与月经妊娠', prefix.includes('宿疾与长期用药（含血压') && prefix.includes('月经与妊娠（只问女性'));
+chk('基础项仍不计入十项', prefix.includes('不计入 X（见 ⑫）'));
+chk('16.1 三组圈号各自顺号', (() => {
+  const i = prefix.indexOf('**写作纪律**：');
+  if (i < 0) return false;
+  const j = prefix.indexOf('17. ', i);
+  const got = (prefix.slice(i, j).match(/[①-⑳]/g) || []).join('');
+  return got === '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭';
+})(), '写作纪律一组须 ①–⑭ 顺号无重号');
+chk('模拟问诊暂停句带上打赏区', presetPrefix.includes('末尾两行声明与打赏区一律暂停'));
+chk('第 21 条里 ⑤ 的后半归成 ⑤之三', prefix.includes('⑤之三，第三、四步的说法要能落地') && !prefix.includes('⑤第三、四步的说法要能落地'));
+chk('问诊轮不许写正文那句摘出末尾声明', prefix.includes('末尾两行声明照常写；打赏区只在出结论那一份回答的末尾出现'));
+
+chk('前说后说只留一条', (prefix.split('前说后说必须对得上').length - 1) === 1);
+chk('24.1 紧跟第 24 条', (() => {
+  const a = prefix.indexOf('24. 未核先报一律禁止');
+  const b = prefix.indexOf('24.1 引述方子本身的事实');
+  const c = prefix.indexOf('21.1 四步法的第二步');
+  return a > 0 && b > a && c > b;
+})());
+
+chk('21.5 排在 21.6 前面', (() => {
+  const a = prefix.indexOf('21.5 问诊齐了之后');
+  const b = prefix.indexOf('21.6 君臣佐使是后世的钥匙');
+  return a > 0 && b > a;
+})());
+
 // ---------- 7. profile 注册 ----------
 const prof = JSON.parse(fs.readFileSync(path.join(PROFILE, 'package.json'), 'utf8'));
 const bundles = prof?.dsh?.profile?.bundles || [];
@@ -208,7 +248,7 @@ try {
 note(`node_modules/${MOD} 指向当前插件目录`, sameTarget, INSTALLED);
 
 // ---------- 8. 副本一致性 ----------
-const files = ['package.json', 'cordis.patch.yml', 'lib/index.js', 'lib/gear.js', 'lib/dosage-guard.js', 'lib/preset.js', 'lib/client.js', 'lib/kb-index.js', 'lib/platform.js', 'lib/corpus.js', 'lib/records.js', 'lib/book-text.js', 'lib/book-classify.js', 'lib/auto-file.js', 'lib/clinic.js', 'lib/search.js', 'lib/preset-scope.js', 'lib/season.js', 'lib/build-index.mjs'];
+const files = ['package.json', 'cordis.patch.yml', 'lib/index.js', 'lib/gear.js', 'lib/dosage-guard.js', 'lib/preset.js', 'lib/client.js', 'lib/kb-index.js', 'lib/platform.js', 'lib/corpus.js', 'lib/records.js', 'lib/book-text.js', 'lib/book-classify.js', 'lib/auto-file.js', 'lib/clinic.js', 'lib/search.js', 'lib/preset-scope.js', 'lib/season.js', 'lib/dashang.js', 'lib/build-index.mjs'];
 // 从 npm/git 装的副本会被 git 换成 CRLF，源目录是 LF；比内容不比行尾
 const md5 = (p) => createHash('md5').update(fs.readFileSync(p, 'utf8').replaceAll(String.fromCharCode(13) + String.fromCharCode(10), String.fromCharCode(10))).digest('hex');
 let diff = 0;
