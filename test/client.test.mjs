@@ -80,10 +80,16 @@ test('浏览器半：预设 id 写死为本插件，开会话不会跑到别家�
   assert.ok(code.includes('E(props.SessionProvider, { session: ref }'), '得用 SessionProvider 圈定这一局')
   // 线上踩过：Ctx.wbSessions 这种拼错/没注入的服务名，会让整个面板在渲染时抛错、白屏。
   var injected = (code.match(/exports\.inject = \[([^\]]*)\]/) || [])[1] || '';
-  var names = code.match(/Ctx\.[A-Za-z_][A-Za-z0-9_]*/g) || [];
+  var names = (code.match(/Ctx\.[A-Za-z_][A-Za-z0-9_]*/g) || []).filter((hit) => hit !== 'Ctx.get');
   for (const hit of names) {
     const svc = hit.slice(4);
     assert.ok(injected.includes("'" + svc + "'"), '客户端访问的服务 ' + hit + ' 必须在 exports.inject 里声明');
+  }
+  // svcOf('x') 是运行时按名字取服务，取到的名字同样必须在注入名单里。
+  var dynamic = code.match(/svcOf\('([A-Za-z0-9_]+)'\)/g) || [];
+  for (const hit of dynamic) {
+    const svc = hit.slice(7, -2);
+    assert.ok(injected.includes("'" + svc + "'"), '客户端按名字取的服务 ' + svc + ' 必须在 exports.inject 里声明');
   }
 
   assert.ok(code.includes("var WB_PRESET = 'dsh-tcm-xueli'"))

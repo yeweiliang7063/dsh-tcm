@@ -126,8 +126,8 @@ chk('问诊记录列表带题面与方名，好避开重复', (() => { const cli
 chk('记录列表里的方名先过遮罩，不吐克数', (() => { const clinic = fs.readFileSync(path.join(PLUGIN, 'lib', 'clinic.js'), 'utf8'); return clinic.includes('blotDosage(String(r.prescribe))'); })());
 chk('模拟问诊有自己的干净面板（只画文字）', clientJs.includes('function QuietChat(') && clientJs.includes('function quietText('), '缺干净面板');
 chk('干净面板只给模拟问诊用，会话页仍走官方面板', clientJs.includes('E(QuietChat, {') && clientJs.includes('E(WbChatPane, {'), '干净面板没挂对地方');
-chk('干净面板认得宿主聊天快照', clientJs.includes("target('chat')") && clientJs.includes('Ctx.uiConversation.binding'));
-chk('干净面板自己持有会话（不再问一次 binding 就放弃）', clientJs.includes('Ctx.sessions.using(sessionId') && clientJs.includes('tcmXueliSimChat') && !clientJs.includes('var binding = Ctx.sessions.binding(sessionId);'), '必须用 using 持有到卸载，否则快照永远是空的');
+chk('干净面板认得宿主聊天快照', clientJs.includes("target('chat')") && clientJs.includes("svcOf('uiConversation').binding"));
+chk('干净面板自己持有会话（不再问一次 binding 就放弃）', clientJs.includes("svcOf('sessions').using(sessionId") && clientJs.includes('tcmXueliSimChat') && !clientJs.includes('var binding = Ctx.sessions.binding(sessionId);'), '必须用 using 持有到卸载，否则快照永远是空的');
 chk('干净面板轮询兑底（订阅不回调也不卡）', clientJs.includes('setInterval(sync, 1200)') && clientJs.includes('clearInterval(timer)'));
 chk('开局气泡在诊室里只留局号行、锈点不露给医生', clientJs.includes('【模拟问诊 · 开局】') && clientJs.includes('said.slice(0, nl)'));
 chk('诊室面板把打赏块裁掉，不露裸网址', clientJs.includes('function withoutGift(') && clientJs.includes("indexOf('请作者喝杯茶'"));
