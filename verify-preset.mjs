@@ -124,23 +124,14 @@ for (const m of [`id: '${pkg.name}'`, "var NS = 'dsh-tcm-xueli'", "form.set('kbP
 chk('lib/client.js 不再有挡位按钮', !clientJs.includes("form.set('level'"));
 chk('问诊记录列表带题面与方名，好避开重复', (() => { const clinic = fs.readFileSync(path.join(PLUGIN, 'lib', 'clinic.js'), 'utf8'); return clinic.includes("'题面 '") && clinic.includes("'方 '"); })());
 chk('记录列表里的方名先过遮罩，不吐克数', (() => { const clinic = fs.readFileSync(path.join(PLUGIN, 'lib', 'clinic.js'), 'utf8'); return clinic.includes('blotDosage(String(r.prescribe))'); })());
-chk('模拟问诊有自己的干净面板（只画文字）', clientJs.includes('function QuietChat(') && clientJs.includes('function quietText('), '缺干净面板');
-chk('干净面板只给模拟问诊用，会话页仍走官方面板', clientJs.includes('E(QuietChat, {') && clientJs.includes('E(WbChatPane, {'), '干净面板没挂对地方');
-chk('干净面板认得宿主聊天快照', clientJs.includes("target('chat')") && clientJs.includes("svcOf('uiConversation').binding"));
-chk('干净面板自己持有会话（不再问一次 binding 就放弃）', clientJs.includes("svcOf('sessions').using(sessionId") && clientJs.includes('tcmXueliSimChat') && !clientJs.includes('var binding = Ctx.sessions.binding(sessionId);'), '必须用 using 持有到卸载，否则快照永远是空的');
-chk('干净面板轮询兑底（订阅不回调也不卡）', clientJs.includes('setInterval(sync, 1200)') && clientJs.includes('clearInterval(timer)'));
-chk('开局气泡在诊室里只留局号行、锈点不露给医生', clientJs.includes('【模拟问诊 · 开局】') && clientJs.includes('said.slice(0, nl)'));
-chk('诊室面板把打赏块裁掉，不露裸网址', clientJs.includes('function withoutGift(') && clientJs.includes("indexOf('请作者喝杯茶'"));
-chk('诊室样式只有一套（没有重复的 quiet 规则）', clientJs.split('.sim-quiet{').length === 2, 'sim-quiet 样式重复');
-chk('诊室从 node.data 取正文（宿主正文不在 node 顶层）', clientJs.includes('node.data || node'));
-chk('简版读不到内容时就地摊开现场（不再偷偷切官方面板）', clientJs.includes('function quietRowsOf(') && clientJs.includes('sim-quiet-diag') && !clientJs.includes('先用官方面板'));
-chk('等病人时挂一行提示，不留空白', clientJs.includes('正在叫病人开口') && clientJs.includes('病人正在回应'));
+chk('模拟问诊诊室回到官方聊天窗（3.2.12 的自绘简版面已撤）', clientJs.includes('E(WbChatPane, {') && clientJs.includes('chatSlot: SIM_CHAT_SLOT') && !clientJs.includes('QuietChat') && !clientJs.includes('sim-quiet'));
+chk('诊室用官方聊天窗，等病人时由宿主自己显示进度', clientJs.includes('E(WbChatPane, {') && clientJs.includes('chatSlot: SIM_CHAT_SLOT'));
 const clinicJs = fs.readFileSync(path.join(PLUGIN, 'lib', 'clinic.js'), 'utf8');
 chk('锚点改由工具返回、不再拼进开局消息', clinicJs.includes('xueli_draw_anchor') && clinicJs.includes('ANCHOR_LIUJING') && !clientJs.includes('simAnchorLine') && !clientJs.includes('【不许重复】') && !clientJs.includes('本局随机锚点'), '锚点进开局消息就是剧透');
-chk('开局指令只留中性两句', clientJs.includes("'【模拟问诊 · 开局】' + lv + '｜' + td + '｜' + rid") && clientJs.includes('按预设【模拟问诊】规矩开局'));
+chk('开局指令只带难度方向局号，锚点在工具结果里', clientJs.includes("'【模拟问诊 · 开局】' + lv + '｜' + td + '｜' + rid") && clientJs.includes("simRoundIds[id] = true"));
 chk('锚点最近八局不重复', clinicJs.includes('ANCHOR_MEMORY = 8') && clinicJs.includes('anchorHistory'));
 chk('锚点两个病机不重复', clinicJs.includes('one !== a') && clinicJs.includes('pickBingjiPair'));
-chk('诊室认得出定稿正文（finalNode 兜底）', clientJs.includes('data.finalNode') && clientJs.includes('finalNode.blocks'));
+chk('诊室不再自己解析正文（交回宿主渲染）', !clientJs.includes('quietText(') && !clientJs.includes('finalNode.blocks'));
 
 // ---------- 6. 预设声明 ----------
 const raw = fs.readFileSync(path.join(PLUGIN, 'cordis.patch.yml'), 'utf8');
