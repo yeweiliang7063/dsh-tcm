@@ -51,6 +51,9 @@ test('开局把这一局的思考关掉，交卷再调回原档', async () => {
   await tick()
   assert.equal(agent.model.current().reasoningEffort, 'off', '开局先关思考')
 
+  // 开局那一轮派病人，医生问一句之后才开始正常转话
+  thinker(session, open('请问您头胀多久了？'))
+
   // 交卷与裁判的思考是同一个回合：必须当场还原，不能等异步。
   thinker(session, open('交卷'))
   assert.equal(agent.model.current().reasoningEffort, 'medium', '交卷当场就回到原来的档位')
@@ -108,6 +111,7 @@ test('消息没带 source 也认，交卷带个句号也认', async () => {
   await tick()
   assert.equal(agent.model.current().reasoningEffort, 'off')
 
+  thinker(session, { type: 'user/message', data: { content: [{ type: 'text', text: '请问大便怎么样？' }] } })
   thinker(session, { type: 'user/message', data: { content: [{ type: 'text', text: '交卷。' }] } })
   assert.equal(agent.model.current().reasoningEffort, 'high', '不能因为多了个标点就不还原')
 })
@@ -125,10 +129,13 @@ test('只管模拟问诊这一局：普通聊天、没开局的会话一个字�
   await tick()
   assert.equal(agent.model.current().reasoningEffort, 'high', '普通聊天不许被碰')
 
-  // 开了一局：照样管
+  // 开了一局，且开局后医生真问了话：这一局才归它管
   thinker({ id: 'sim-1' }, open('【模拟问诊 · 开局】简单｜方药｜20260101-30'))
   await tick()
   assert.equal(agent.model.current().reasoningEffort, 'off')
+  thinker({ id: 'sim-1' }, open('请问口干吗？'))
+  await tick()
+  assert.equal(agent.model.current().reasoningEffort, 'off', '这一局还在问诊中，思考要继续关着')
 
   // 交完卷这一局就结束了，之后再聊不再动它
   thinker({ id: 'sim-1' }, open('交卷'))
@@ -138,7 +145,7 @@ test('只管模拟问诊这一局：普通聊天、没开局的会话一个字�
   assert.equal(agent.model.current().reasoningEffort, 'high', '交完卷就不再管')
 })
 
-test('闭嘴只认「答卷」两个字：开局、问话、通知都不闭嘴', () => {
+test('闭嘴只认「答卷」两个字：开局与问话都不闭嘴，写了「答卷」才闭', () => {
   const agent = fakeAgent('deepseek', 'deepseek-v4', 'medium')
   const ctx = fakeCtx(agent, ['off', 'minimal', 'low', 'medium'])
   const { thinker } = createSimThinker(ctx, { versionOf: () => 'xueli' })
@@ -146,7 +153,7 @@ test('闭嘴只认「答卷」两个字：开局、问话、通知都不闭嘴',
   const say = (text, kind) => thinker(session, { type: 'user/message', data: { source: { kind }, content: [{ type: 'text', text }] } })
 
   say('【模拟问诊 · 开局】普通｜方药｜20261121-1', 'user')
-  assert.equal(simQuiet('sim-q'), false, '开局不许闭嘴')
+  assert.equal(simQuiet('sim-q'), true, '开局这一轮也不许说话，只许派病人')
   say('请问您头晕多久了？', 'user')
   assert.equal(simQuiet('sim-q'), false, '问话不闭嘴')
   say('口干口苦，脉弦，治法和解少阳，主方小柴胡汤。', 'user')
@@ -163,22 +170,26 @@ test('医生打「答卷」才开始闭嘴，一直到「交卷」', () => {
   const say = (text) => thinker(session, { type: 'user/message', data: { source: { kind: 'user' }, content: [{ type: 'text', text }] } })
 
   say('【模拟问诊 · 开局】普通｜方药｜20261121-1')
-  assert.equal(simQuiet('sim-ask'), false, '开局这一轮要开口派病人')
+  assert.equal(simQuiet('sim-ask'), true, '开局这一轮只许派病人，正文闭嘴')
+  say('请问口苦吗？')
+  assert.equal(simQuiet('sim-ask'), false, '医生第一次开口，病人要能被叫来')
   say('答卷：口干口苦，脉弦，少阳证，治法和解少阳，主方小柴胡汤。')
   assert.equal(simQuiet('sim-ask'), true, '看到「答卷」两个字就闭嘴')
   say('那要是只和解不换方呢？')
-  assert.equal(simQuiet('sim-ask'), true, '交卷之前一直闭嘴')
+  assert.equal(simQuiet('sim-ask'), true, '交卷之前一直闭嘴，问话也闭嘴')
   say('交卷')
   assert.equal(simQuiet('sim-ask'), false, '交卷放开')
 })
 
-test('诊室面板代发的开局（自定义 source）不许被闭嘴', () => {
+test('诊室面板代发的开局：只许派病人，正文闭嘴', () => {
   const agent = fakeAgent('deepseek', 'deepseek-v4', 'medium')
   const ctx = fakeCtx(agent, ['off', 'minimal', 'low', 'medium'])
   const { thinker } = createSimThinker(ctx, { versionOf: () => 'xueli' })
   const session = { id: 'sim-source' }
   thinker(session, { type: 'user/message', data: { source: { kind: 'tcmXueliSim' }, content: [{ type: 'text', text: '【模拟问诊 · 开局】普通｜针药｜20261121-182549' }] } })
-  assert.equal(simQuiet('sim-source'), false, '开局是医生这边发的，不许闭嘴')
+  assert.equal(simQuiet('sim-source'), true, '开局这一轮正文闭嘴，免得自己念病例卡')
+  thinker(session, { type: 'user/message', data: { source: { kind: 'tcmXueliSim' }, content: [{ type: 'text', text: '请问您怕冷还是怕热？' }] } })
+  assert.equal(simQuiet('sim-source'), false, '医生真问了，就放开')
 })
 
 test('开局那句话不看预设也认，只要有「交卷」两个字就算交卷', async () => {
@@ -188,6 +199,7 @@ test('开局那句话不看预设也认，只要有「交卷」两个字就算�
   const session = { id: 'sim-no-preset' }
 
   thinker(session, open('【模拟问诊 · 开局】困难｜针药｜20261121-1'))
+  thinker(session, open('请问您头晕吗？'))
   await tick()
   assert.equal(agent.model.current().reasoningEffort, 'off', '预设还没挂上也要关思考')
   thinker(session, open('这一局我看完了，交卷吧。'))
