@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { createSimThinker } from '../lib/sim-think.js'
+import { createSimThinker, isQuestion } from '../lib/sim-think.js'
 
 /** 一个假的 agent：记着当前选择，select 时照着改。 */
 function fakeAgent(provider, model, effort) {
@@ -142,4 +142,20 @@ test('医生答完题（没打「交卷」两个字）也算交卷：只认治�
   await tick()
   made.thinker({ id: 's-11' }, open('取穴：内关、足三里。'))
   assert.equal(second.model.current().reasoningEffort, 'medium', '点了取穴也要还原')
+})
+
+test('问句与答卷的分界：带问号的算问，陈述/给方给穴算答卷', () => {
+  // 问诊
+  assert.equal(isQuestion('口苦吗？'), true)
+  assert.equal(isQuestion('大便几天一次?'), true)
+  assert.equal(isQuestion('平时怕冷还是怕热'), true, '「还是」不硬判，保守当问句也行')
+  assert.equal(isQuestion('嘴里苦不苦呢'), true)
+  assert.equal(isQuestion('请问平时睡得怎么样'), true)
+  assert.equal(isQuestion('小便利不利索'), true, '「利不利」不在词表里，按短句默认算问句更稳妥')
+  // 答卷
+  assert.equal(isQuestion('这是少阳证'), false)
+  assert.equal(isQuestion('小柴胡汤。'), false)
+  assert.equal(isQuestion('取穴内关、足三里。'), false)
+  assert.equal(isQuestion('就这样吧'), false)
+  assert.equal(isQuestion('交卷'), false)
 })
