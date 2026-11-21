@@ -63,6 +63,7 @@ function makeStream(src, overrides = {}) {
       const currentPath = deps.currentPath || (() => 'D:/中医知识库')
       const looksTcmSession = deps.looksTcmSession || (() => true)
       const looksTcmPrompt = deps.looksTcmPrompt || (() => false)
+      const simQuiet = deps.simQuiet || (() => false)
       ${patched}
     })
   `
@@ -78,6 +79,7 @@ function makeStream(src, overrides = {}) {
     currentPath: overrides.currentPath,
     looksTcmSession: overrides.looksTcmSession,
     looksTcmPrompt: overrides.looksTcmPrompt,
+    simQuiet: overrides.simQuiet,
   }
   return (chunks) => {
     async function* source() {
@@ -405,4 +407,25 @@ test('流块类型：引文被句号、换行切开，跨块也不许误遮', as
   assert.ok(joined.includes('桂枝9克'), '引文里的剂量被误遮：' + joined)
   assert.ok(joined.includes('甘草6克'), '引文里的剂量被误遮：' + joined)
   assert.ok(!joined.includes('桂枝*'), '引文里的剂量被误遮：' + joined)
+})
+
+test('被系统通知叫醒的一轮：文字清空，工具块照旧转发', async () => {
+  const run = makeStream(readFileSync(INDEX, 'utf8'), { simQuiet: () => true })([
+    START,
+    TEXT('我是旁白，不该出现。'),
+    { type: 'tool-call', index: 1, name: 'send_message', input: { text: '你好' } },
+    { type: 'block-end', index: 0, block: { type: 'text', text: '我是旁白，不该出现。' } },
+    { type: 'usage', tokens: 5 },
+    { type: 'finish', reason: 'stop' },
+  ])
+  const out = await collect(run)
+  assertAllBlocksLegal(out, '闭嘴的一轮')
+  const texts = out.filter((c) => c.type === 'text-delta').map((c) => c.text)
+  assert.deepEqual(texts, [], '闭嘴的一轮不许往外发正文')
+  for (const c of out) {
+    if (c.block && typeof c.block.text === 'string') assert.equal(c.block.text, '', '正文块末的全文也要清空')
+  }
+  const call = out.find((c) => c.type === 'tool-call')
+  assert.ok(call, '工具块不许丢：丢了宿主会报 unknown tool')
+  assert.equal(call.name, 'send_message')
 })
