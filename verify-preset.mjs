@@ -240,7 +240,10 @@ chk('全量版会话里学习版规则不生效', fs.readFileSync(path.join(PLUG
 chk('识版导出 versionOf', fs.readFileSync(path.join(PLUGIN, 'lib', 'preset-scope.js'), 'utf8').includes('export function versionOf'));
 chk('资料库根目录由代码锁定', fs.existsSync(path.join(PLUGIN, 'lib', 'kb-root.js')) && fs.readFileSync(path.join(PLUGIN, 'lib', 'kb-index.js'), 'utf8').includes('childOf(root, INDEX_FILE)') && fs.readFileSync(path.join(PLUGIN, 'lib', 'records.js'), 'utf8').includes('insideRoot(kb, dir)'));
 chk('开局关掉思考、交卷开到 High', (() => { const think = fs.readFileSync(path.join(PLUGIN, 'lib', 'sim-think.js'), 'utf8'); const index = fs.readFileSync(path.join(PLUGIN, 'lib', 'index.js'), 'utf8'); return think.includes("'【模拟问诊 · 开局】'") && think.includes("['off', 'minimal', 'low']") && think.includes('createSimThinker') && think.includes("HAND_IN_LEVEL = 'high'") && think.includes('raiseHigh(ctx, known, previous)') && index.includes('createSimThinker(ctx, { versionOf })'); })());
-chk('裁判评分：写克数不扣分，只看君臣佐使与加减', prefix.includes('医生自己写了每味药的克数，不算扣分项') && prefix.includes('君臣佐使站不站得住') && prefix.includes('加减对不对证'));
+chk('裁判按四步点评：问够不够→证对不对→方对不对证→君臣佐使与药味', prefix.includes('①问得够不够') && prefix.includes('②病症定得对不对') && prefix.includes('③方药对不对证') && prefix.includes('④方子合不合方剂规矩') && prefix.includes('前一步不过就不往下一步跑'));
+chk('证定错了直接说错在哪、并给应当的方向', prefix.includes('病症定得不对') && prefix.includes('再给出应当是什么方向'));
+chk('对症之后才看君臣佐使与药味多少，且不写剂量', prefix.includes('君臣佐使有没有立起来') && prefix.includes('药味有没有多、有没有少') && prefix.includes('只写药名，不写克数，也不写煎法'));
+chk('裁判评分：写克数不扣分，只看君臣佐使与加减', prefix.includes('医生自己写了每味药的克数，不算扣分项') && prefix.includes('君臣佐使有没有立起来') && prefix.includes('该去的去了没有'));
 chk('裁判不要求医生引经典原文', prefix.includes('不要求医生引经典原文') && prefix.includes('一句没引，也不算错'));
 chk('点评不许写出可照抓的处方笺', prefix.includes('不写先煎、后下、包煎、另煎') && prefix.includes('不写几剂几服') && prefix.includes('破了自己判不合格'));
 chk('这一局的病人子会话也关思考', (() => { const think = fs.readFileSync(path.join(PLUGIN, 'lib', 'sim-think.js'), 'utf8'); return think.includes('simSessions.has(parent)') && think.includes('subagent'); })());
