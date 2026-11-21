@@ -94,6 +94,13 @@ test('浏览器半：预设 id 写死为本插件，开会话不会跑到别家�
 
   assert.ok(code.includes("var WB_PRESET = 'dsh-tcm-xueli'"))
 })
+test('取服务的 svcOf 必须真有定义（删模块时别把它带走）', () => {
+  const code = readFileSync(join(root, 'lib', 'client.js'), 'utf8')
+  if (code.includes('svcOf(')) {
+    assert.ok(code.includes('function svcOf('), '用了 svcOf 却没有定义，开局会直接报错')
+  }
+})
+
 test('资料查询页：左侧有入口，面板回原文和白话', () => {
   const code = readFileSync(join(root, 'lib', 'client.js'), 'utf8')
   assert.ok(code.includes("var SR_PANEL = 'xueli-search'"), '查询页的 id 要写死')
