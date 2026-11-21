@@ -128,14 +128,19 @@ chk('模拟问诊有自己的干净面板（只画文字）', clientJs.includes(
 chk('干净面板只给模拟问诊用，会话页仍走官方面板', clientJs.includes('E(QuietChat, {') && clientJs.includes('E(WbChatPane, {'), '干净面板没挂对地方');
 chk('干净面板认得宿主聊天快照', clientJs.includes("target('chat')") && clientJs.includes('Ctx.uiConversation.binding'));
 chk('干净面板自己持有会话（不再问一次 binding 就放弃）', clientJs.includes('Ctx.sessions.using(sessionId') && clientJs.includes('tcmXueliSimChat') && !clientJs.includes('var binding = Ctx.sessions.binding(sessionId);'), '必须用 using 持有到卸载，否则快照永远是空的');
+chk('干净面板轮询兑底（订阅不回调也不卡）', clientJs.includes('setInterval(sync, 1200)') && clientJs.includes('clearInterval(timer)'));
+chk('开局气泡在诊室里只留局号行、锈点不露给医生', clientJs.includes('【模拟问诊 · 开局】') && clientJs.includes('said.slice(0, nl)'));
 chk('诊室面板把打赏块裁掉，不露裸网址', clientJs.includes('function withoutGift(') && clientJs.includes("indexOf('请作者喝杯茶'"));
 chk('诊室样式只有一套（没有重复的 quiet 规则）', clientJs.split('.sim-quiet{').length === 2, 'sim-quiet 样式重复');
 chk('诊室从 node.data 取正文（宿主正文不在 node 顶层）', clientJs.includes('node.data || node'));
 chk('简版读不到内容时能切回官方面板', clientJs.includes('function quietRowsOf(') && clientJs.includes("'官方面板'"));
-chk('每局抽随机锚点（六经＋病机＋诱因）', clientJs.includes('var SIM_ANCHOR_KEY') && clientJs.includes('function simPickAnchor(') && clientJs.includes('tcm-xueli-sim-anchors'));
-chk('随机锚点最近八局不重复', clientJs.includes('slice(-8)'));
-chk('随机锚点两个病机不重复', clientJs.includes('one !== a') && clientJs.includes('two[1]'));
-chk('开局指令带上锚点行与不重复提醒', clientJs.includes('simAnchorLine(lv)') && clientJs.includes('【不许重复】'));
+chk('等病人时挂一行提示，不留空白', clientJs.includes('正在叫病人开口') && clientJs.includes('病人正在回应'));
+const clinicJs = fs.readFileSync(path.join(PLUGIN, 'lib', 'clinic.js'), 'utf8');
+chk('锚点改由工具返回、不再拼进开局消息', clinicJs.includes('xueli_draw_anchor') && clinicJs.includes('ANCHOR_LIUJING') && !clientJs.includes('simAnchorLine') && !clientJs.includes('【不许重复】') && !clientJs.includes('本局随机锚点'), '锚点进开局消息就是剧透');
+chk('开局指令只留中性两句', clientJs.includes("'【模拟问诊 · 开局】' + lv + '｜' + td + '｜' + rid") && clientJs.includes('按预设【模拟问诊】规矩开局'));
+chk('锚点最近八局不重复', clinicJs.includes('ANCHOR_MEMORY = 8') && clinicJs.includes('anchorHistory'));
+chk('锚点两个病机不重复', clinicJs.includes('one !== a') && clinicJs.includes('pickBingjiPair'));
+chk('诊室认得出定稿正文（finalNode 兜底）', clientJs.includes('data.finalNode') && clientJs.includes('finalNode.blocks'));
 
 // ---------- 6. 预设声明 ----------
 const raw = fs.readFileSync(path.join(PLUGIN, 'cordis.patch.yml'), 'utf8');
@@ -155,6 +160,8 @@ const presetPrefix = String((((cfg.plugins || []).find((x) => x && x.id === 'per
 chk('预设提示词含【模拟问诊】段落', presetPrefix.includes('【模拟问诊】'));
 chk('预设提示词写明开局指令格式', presetPrefix.includes('【模拟问诊 · 开局】'));
 chk('预设提示词让裁判记局（xueli_begin_round / xueli_finish_round）', presetPrefix.includes('xueli_begin_round') && presetPrefix.includes('xueli_finish_round'));
+chk('提示词：锚点只从工具结果拿、不对医生露', presetPrefix.includes('本局锚点只从 xueli_draw_anchor 的工具结果里拿') && presetPrefix.includes('一个字都不许出现在给医生看的任何文字里'));
+chk('提示词：查书白名单含抽锚工具', presetPrefix.includes('subagent、xueli_draw_anchor、xueli_begin_round、send_message、wait_agent'));
 chk('模拟问诊仍守住「不给剂量」', presetPrefix.includes('不给剂量'));
 chk('造病例不许查书（硬规在预设里）', presetPrefix.includes('【造病例不许查书】') && presetPrefix.includes('检索类工具一个都不许调'), '缺造病例不查书的硬规');
 chk('病人第一句只讲难受，不许提方名药名', presetPrefix.includes('不许提方名、药名、条文号、证型名'));

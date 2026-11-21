@@ -61,7 +61,7 @@ test('问诊记录不碰磁盘：模块里没有写文件的导入', async () =>
 })
 
 test('问诊工具名带 xueli_ 前缀，不会和岐黄工作台的同名工具撞车', () => {
-  assert.deepEqual(TOOL_NAMES, ['xueli_begin_round', 'xueli_finish_round', 'xueli_list_rounds'])
+  assert.deepEqual(TOOL_NAMES, ['xueli_draw_anchor', 'xueli_begin_round', 'xueli_finish_round', 'xueli_list_rounds'])
 })
 
 test('问诊工具真的注册得进：三个名字都交到宿主工具服务手上', async () => {
@@ -144,4 +144,26 @@ test('两版工具不许串：全量版会话里这三件工具不挂上去', as
   )
   const unknown = opts.at(-1).options.when
   assert.equal(unknown({ agent: { session: {} } }), true, '认不出是哪一版时按原样挂，不乱拦')
+})
+
+test('锚点：难度定池、两病机不重复、八局窗口不抽重', async () => {
+  const store = createStore()
+  const hard = ['寒热错杂', '虚实夹杂', '津液受伤', '血瘀', '上热下寒', '真寒假热']
+  const normal = ['表里同病', '气机不畅', '水饮内停', '湿热内蕴', '痰湿中阻', '食积']
+  const easy = ['寒证', '热证', '虚证', '实证']
+  for (let i = 0; i < 30; i += 1) {
+    const drawn = store.drawAnchor('困难')
+    const parts = drawn.anchor.split('|')
+    assert.equal(parts.length, 4)
+    assert.notEqual(parts[1], parts[2], '两个病机不许相同')
+    assert.ok(hard.includes(parts[1]) && hard.includes(parts[2]), '困难档只从困难池抽')
+    assert.ok(drawn.line.includes('起手经络：') && drawn.line.includes('诱因：'))
+  }
+  const eight = []
+  for (let i = 0; i < 8; i += 1) eight.push(store.drawAnchor('普通').anchor)
+  assert.equal(new Set(eight).size, 8, '八局窗口内不该抽到重复锚点')
+  const e = store.drawAnchor('简单').anchor.split('|')
+  assert.ok(easy.includes(e[1]) && easy.includes(e[2]), '简单档只从简单池抽')
+  const f = store.drawAnchor('地狱').anchor.split('|')
+  assert.ok(normal.includes(f[1]) && normal.includes(f[2]), '难度认不出退回普通池')
 })
