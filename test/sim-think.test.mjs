@@ -18,10 +18,14 @@ function fakeAgent(provider, model, effort) {
 }
 
 /** 假 ctx：sessionController 给 agent，llm 只认指定的档位。 */
-function fakeCtx(agent, accepts) {
+function fakeCtx(agent, accepts, resolveOf) {
+  const resolve = typeof resolveOf === 'function' ? resolveOf : (id) => {
+    agent.session = { id }
+    return agent
+  }
   return {
     get(name) {
-      if (name === 'sessionController') return { resolveAgent: async () => agent }
+      if (name === 'sessionController') return { resolveAgent: async (id) => resolve(id) }
       if (name === 'llm') {
         return {
           resolveCallConfig(selection) {
@@ -209,7 +213,7 @@ test('开局那句话不看预设也认，只要有「交卷」两个字就算�
 test('拿到的 agent 不属于这一局（全量版/普通聊天的）就不碰', async () => {
   const other = fakeAgent('deepseek', 'deepseek-v4', 'high')
   other.session = { id: 'full-version-chat' }
-  const ctx = fakeCtx(other, ['off', 'high'])
+  const ctx = fakeCtx(other, ['off', 'high'], () => other)
   const { thinker } = createSimThinker(ctx, { versionOf: () => 'xueli' })
   const session = { id: 'sim-scope' }
 

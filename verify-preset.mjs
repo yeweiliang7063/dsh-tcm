@@ -229,7 +229,7 @@ chk('打赏补在任何给了分析的回答上', dashangSrc.includes('export fu
 chk('打赏网址带实时端口', dashangSrc.includes('listenedPort') && dashangSrc.includes('config?.port') && !/127\.0\.0\.1:\d{4,5}\/dsh-tcm-xueli/.test(dashangSrc));
 chk('打赏块含两张码与自愿说明', dashangSrc.includes('![支付宝打赏码]') && dashangSrc.includes('![微信打赏码]') && dashangSrc.includes('打赏全凭自愿'));
 chk('提示词里不含打赏与收款码', !prefix.includes('打赏') && !prefix.includes('alipay.jpg') && !prefix.includes('![支付宝打赏码]') && !prefix.includes('请作者喝杯茶'));
-chk('打赏去重同时看开头和结尾', indexSrc.includes('tailText') && indexSrc.includes("tailText.includes('请作者喝杯茶')"));
+chk('打赏去重同时看开头和结尾', indexSrc.includes('tailText') && indexSrc.includes("tailText.includes('请作者喝杯茶')") && indexSrc.includes('if (head.length < 64) head += chunk.text'));
 chk('两张打赏图随包发布', fs.existsSync(path.join(PLUGIN, 'assets', 'dashang', 'alipay.jpg')) && fs.existsSync(path.join(PLUGIN, 'assets', 'dashang', 'wechat.jpg')));
 chk('打赏通道代码随包发布', fs.existsSync(path.join(PLUGIN, 'lib', 'dashang.js')));
 chk('打赏通道接进宿主', indexSrc.includes('mountDashangRoute'));
@@ -239,11 +239,13 @@ chk('两版工具不许串（学习版侧）', fs.readFileSync(path.join(PLUGIN,
 chk('全量版会话里学习版规则不生效', fs.readFileSync(path.join(PLUGIN, 'lib', 'index.js'), 'utf8').includes("versionOf(ctx, options?.sessionId) === 'full'"));
 chk('识版导出 versionOf', fs.readFileSync(path.join(PLUGIN, 'lib', 'preset-scope.js'), 'utf8').includes('export function versionOf'));
 chk('资料库根目录由代码锁定', fs.existsSync(path.join(PLUGIN, 'lib', 'kb-root.js')) && fs.readFileSync(path.join(PLUGIN, 'lib', 'kb-index.js'), 'utf8').includes('childOf(root, INDEX_FILE)') && fs.readFileSync(path.join(PLUGIN, 'lib', 'records.js'), 'utf8').includes('insideRoot(kb, dir)'));
-chk('调档先认会话归属，别的预设不碰', (() => { const think = fs.readFileSync(path.join(PLUGIN, 'lib', 'sim-think.js'), 'utf8'); return think.includes("agent.session && typeof agent.session.id === 'string'") && think.includes('owner !== sessionId') && think.includes('不调档'); })());
+chk('每条回话收尾压回最低档：settled 真接上了', (() => { const index = fs.readFileSync(path.join(PLUGIN, 'lib', 'index.js'), 'utf8'); return index.includes('const { thinker, child, settled } = createSimThinker') && index.includes('settled(session, event)'); })());
+chk('调档先认会话归属，空 id 也拒', (() => { const think = fs.readFileSync(path.join(PLUGIN, 'lib', 'sim-think.js'), 'utf8'); return think.includes('owner !== sessionId && agent.id !== sessionId') && think.includes('不调档'); })());
 chk('开局关掉思考、交卷开到 High', (() => { const think = fs.readFileSync(path.join(PLUGIN, 'lib', 'sim-think.js'), 'utf8'); const index = fs.readFileSync(path.join(PLUGIN, 'lib', 'index.js'), 'utf8'); return think.includes("'【模拟问诊 · 开局】'") && think.includes("['off', 'minimal', 'low']") && think.includes('createSimThinker') && think.includes("HAND_IN_LEVEL = 'high'") && think.includes('raiseHigh(ctx, known, previous)') && index.includes('createSimThinker(ctx, { versionOf })'); })());
 chk('不许拿处方写法当扣分理由', prefix.includes('不许出现「能照着抓的方子」「这一格不合规矩」「剂量不对」这类话当扣分理由') && prefix.includes('服后怎么将息（盖被取汗、喝热粥这类）'));
 chk('点评不拿剂量扣分，君臣佐使不靠克数', prefix.includes('不扣分、不当硬错、不许因此写「不过关」') && prefix.includes('量最大不等于君') && prefix.includes('谁说的就记到谁名下'));
 chk('四步点评只在模拟问诊里用', prefix.includes('下面这套四步点评只在模拟问诊里用') && prefix.includes('普通问诊、拿方来点评、自己问病这些回合一概不套它'));
+chk('四步的顺序不许乱', (() => { const i = prefix.indexOf('①问得够不够'); const j = prefix.indexOf('②病症定得对不对'); const k = prefix.indexOf('③方药对不对证'); const l = prefix.indexOf('④方子合不合方剂规矩'); return i > 0 && i < j && j < k && k < l; })());
 chk('裁判按四步点评：问够不够→证对不对→方对不对证→君臣佐使与药味', prefix.includes('①问得够不够') && prefix.includes('②病症定得对不对') && prefix.includes('③方药对不对证') && prefix.includes('④方子合不合方剂规矩') && prefix.includes('前一步不过就不往下一步跑'));
 chk('证定错了直接说错在哪、并给应当的方向', prefix.includes('病症定得不对') && prefix.includes('再给出应当是什么方向'));
 chk('对症之后才看君臣佐使与药味多少，且不写剂量', prefix.includes('君臣佐使有没有立起来') && prefix.includes('药味有没有多、有没有少') && prefix.includes('只写药名，不写克数，也不写煎法'));
