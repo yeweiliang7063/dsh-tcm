@@ -167,3 +167,30 @@ test('锚点：难度定池、两病机不重复、八局窗口不抽重', async
   const f = store.drawAnchor('地狱').anchor.split('|')
   assert.ok(normal.includes(f[1]) && normal.includes(f[2]), '难度认不出退回普通池')
 })
+
+test('抽过的锚点存进盘里：重启后同一锚点不会再抽到', () => {
+  const saved = []
+  const first = createStore({ loadSeen: () => [], saveSeen: (list) => saved.push(...list) })
+  const one = first.drawAnchor('普通')
+  assert.equal(saved.at(-1), one.anchor)
+
+  // 模拟重启：内存空了，但上次存的那条读回来
+  const second = createStore({ loadSeen: () => [one.anchor] })
+  for (let i = 0; i < 40; i += 1) {
+    assert.notEqual(second.drawAnchor('普通').anchor, one.anchor, '八局内不许抽到同一个锚点')
+  }
+})
+
+test('最近几局也落一份：重启后 list_rounds 照样翻得到题面', async () => {
+  const disk = []
+  const first = createStore({ loadRounds: () => disk, saveRound: (row) => disk.push({ ...row }) })
+  await first.begin({ id: '20260101-7', level: '简单', direction: '方药', caseSummary: '女 35 岁 头痛' })
+  await first.end({ id: '20260101-7', verdict: '过关', prescribe: '小柴胡汤' })
+  assert.equal(disk.length, 2, '开局记一条、判完覆盖一条')
+
+  const second = createStore({ loadRounds: () => disk })
+  const rows = await second.list(5)
+  assert.equal(rows.length, 1)
+  assert.equal(rows[0].caseSummary, '女 35 岁 头痛')
+  assert.equal(rows[0].verdict, '过关')
+})

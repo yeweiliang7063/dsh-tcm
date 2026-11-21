@@ -161,7 +161,9 @@ chk('转话时心里的方名条文不许写进面板', presetPrefix.includes('�
 chk('答题期间模型不许自己发旁白', presetPrefix.includes('答题期间你不许自己发话') && presetPrefix.includes('不许写「病人已经把袖子挽好了'));
 chk('提示词也只认「交卷」两个字', presetPrefix.includes('只有医生明确说「交卷」') && presetPrefix.includes('等他说「交卷」'));
 chk('只有医生打「交卷」才切点评（不再按内容猜）', (() => { const think = fs.readFileSync(path.join(PLUGIN, 'lib', 'sim-think.js'), 'utf8'); return think.includes('function wantsHandIn(said)') && think.includes('if (!wantsHandIn(said))') && !think.includes('isQuestion'); })());
-chk('调档只管模拟问诊这一局，普通聊天不碰', (() => { const think = fs.readFileSync(path.join(PLUGIN, 'lib', 'sim-think.js'), 'utf8'); return think.includes('if (!simSessions.has(sessionId)) return') && think.includes('simSessions.delete(sessionId)'); })());
+chk('调档只管模拟问诊这一局，普通聊天不碰', (() => { const think = fs.readFileSync(path.join(PLUGIN, 'lib', 'sim-think.js'), 'utf8');
+chk('抽过的锚点跨重启记得住（写进资料库医案目录）', (() => { const rec = fs.readFileSync(path.join(PLUGIN, 'lib', 'records.js'), 'utf8'); const idx = fs.readFileSync(path.join(PLUGIN, 'lib', 'index.js'), 'utf8'); return rec.includes('export function readSeenAnchors') && rec.includes('export function appendSeenAnchor') && idx.includes('loadSeen: () => readSeenAnchors(currentPath(config))') && idx.includes('saveSeen:'); })());
+chk('最近几局也落一份，重启后翻得到', (() => { const rec = fs.readFileSync(path.join(PLUGIN, 'lib', 'records.js'), 'utf8'); const idx = fs.readFileSync(path.join(PLUGIN, 'lib', 'index.js'), 'utf8'); return rec.includes('export function readRecentRounds') && rec.includes('export function saveRecentRound') && idx.includes('loadRounds: () => readRecentRounds(currentPath(config))'); })()); return think.includes('if (!simSessions.has(sessionId)) return') && think.includes('simSessions.delete(sessionId)'); })());
 chk('预设说明写明仅供学习研究', String(cfg.description).includes('仅供学习研究'));
 const rawPrefix = ((cfg.plugins || []).find((x) => x.id === 'persona') || {}).config?.prefix || '';
 chk('persona 提示词以常驻口径变量开头', rawPrefix.trimStart().startsWith('{{tcm_gear_guard}}'));
