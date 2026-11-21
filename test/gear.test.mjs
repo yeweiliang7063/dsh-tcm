@@ -178,6 +178,16 @@ test('单位写法补齐：公克、gm、全角 ｍｇ、尅', () => {
   }
 })
 
+test('括号包单位、约数写法也要遮，句末括弧不许被吃掉', () => {
+  assert.equal(blotDosage('桂枝9（克）'), '桂枝*')
+  assert.equal(blotDosage('桂枝9(克)'), '桂枝*')
+  assert.equal(blotDosage('9（g）'), '*')
+  assert.equal(blotDosage('十余克'), '*')
+  assert.equal(blotDosage('（原文：桂枝9克）'), '（原文：桂枝*）')
+  assert.equal(blotDosage('（按 1 比 1 配，桂枝9克，白芍9克）'), '（按 1 比 1 配，桂枝*，白芍*）')
+  assert.equal(blotDosage('这味药按克算'), '这味药按克算')
+})
+
 test('流式切点：切在引号中间就前移，不把引文劈成两半', () => {
   const head = '（原文：「桂枝9克，芍药6克。'
   assert.equal(quoteSafeCut(head, head.length), head.indexOf('「'))
