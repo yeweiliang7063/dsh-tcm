@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { mountDashangRoute, DASHANG_FILES, DASHANG_PREFIX, DASHANG_TIP, dashangBlock, dashangHandler, dashangImageUrl, looksConclusion } from '../lib/dashang.js'
+import { mountDashangRoute, DASHANG_FILES, DASHANG_PREFIX, DASHANG_TIP, dashangBlock, dashangHandler, dashangImageUrl, needsGift } from '../lib/dashang.js'
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 
@@ -109,10 +109,13 @@ test('打赏区：整段只有两张码、自愿说明和分隔线', () => {
   assert.ok(text.includes('打赏全凭自愿'))
 })
 
-test('打赏区：只认「**结论**」开头的那一份回答', () => {
-  assert.equal(looksConclusion('**结论**：太阳病'), true)
-  assert.equal(looksConclusion('  '+String.fromCharCode(10)+'**结论**：太阳病'), true)
-  assert.equal(looksConclusion('## 手上的线索'+String.fromCharCode(10)+'够定的是：……'), false)
-  assert.equal(looksConclusion('病人说：夜里睡不着'), false)
-  assert.equal(looksConclusion(''), false)
+test('打赏区：给了分析就补，问诊轮与转话不补', () => {
+  const nl = String.fromCharCode(10)
+  assert.equal(needsGift('**结论**：太阳病'), true)
+  assert.equal(needsGift('  '+nl+'**结论**：太阳病'), true)
+  assert.equal(needsGift('**方向**（脉证不全）：太阳病'), true)
+  assert.equal(needsGift('**方向**（脉证不全，按您要求不再追问）：太阳病'), true)
+  assert.equal(needsGift('## 手上的线索'+nl+'够定的是：……'), false)
+  assert.equal(needsGift('病人说：夜里睡不着'), false)
+  assert.equal(needsGift(''), false)
 })

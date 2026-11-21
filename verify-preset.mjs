@@ -196,11 +196,11 @@ chk('六经与时令必须排在最前', prefix.includes('21.5 问诊齐了之�
 const dashangSrc = fs.readFileSync(path.join(PLUGIN, 'lib', 'dashang.js'), 'utf8');
 const indexSrc = fs.readFileSync(path.join(PLUGIN, 'lib', 'index.js'), 'utf8');
 chk('打赏区由插件代码追加', dashangSrc.includes('export function dashangBlock') && indexSrc.includes('dashangGiftText') && indexSrc.includes("chunk.type === 'finish'"));
-chk('打赏只补在结论那份回答', dashangSrc.includes('export function looksConclusion') && dashangSrc.includes("startsWith('**结论**')") && indexSrc.includes('looksConclusion(head)'));
+chk('打赏补在任何给了分析的回答上', dashangSrc.includes('export function needsGift') && dashangSrc.includes('结论|方向|辨证|治法|病机') && indexSrc.includes('needsGift(head)'));
 chk('打赏网址带实时端口', dashangSrc.includes('listenedPort') && dashangSrc.includes('config?.port') && !/127\.0\.0\.1:\d{4,5}\/dsh-tcm-xueli/.test(dashangSrc));
 chk('打赏块含两张码与自愿说明', dashangSrc.includes('![支付宝打赏码]') && dashangSrc.includes('![微信打赏码]') && dashangSrc.includes('打赏全凭自愿'));
-chk('提示词不再让模型写打赏', !prefix.includes('alipay.jpg') && !prefix.includes('![支付宝打赏码]') && prefix.includes('打赏区由插件自动补'));
-chk('问诊轮不写打赏', prefix.includes('打赏区由插件加，不用你写'));
+chk('提示词里不含打赏与收款码', !prefix.includes('打赏') && !prefix.includes('alipay.jpg') && !prefix.includes('![支付宝打赏码]') && !prefix.includes('请作者喝杯茶'));
+chk('打赏去重同时看开头和结尾', indexSrc.includes('tailText') && indexSrc.includes("tailText.includes('请作者喝杯茶')"));
 chk('两张打赏图随包发布', fs.existsSync(path.join(PLUGIN, 'assets', 'dashang', 'alipay.jpg')) && fs.existsSync(path.join(PLUGIN, 'assets', 'dashang', 'wechat.jpg')));
 chk('打赏通道代码随包发布', fs.existsSync(path.join(PLUGIN, 'lib', 'dashang.js')));
 chk('打赏通道接进宿主', indexSrc.includes('mountDashangRoute'));
@@ -226,9 +226,9 @@ chk('16.1 三组圈号各自顺号', (() => {
   const got = (prefix.slice(i, j).match(/[①-⑳]/g) || []).join('');
   return got === '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭';
 })(), '写作纪律一组须 ①–⑭ 顺号无重号');
-chk('模拟问诊暂停句写明打赏由插件管', presetPrefix.includes('末尾两行声明一律暂停') && presetPrefix.includes('打赏区由插件自动补'));
+chk('模拟问诊暂停句已去掉打赏字样', presetPrefix.includes('末尾两行声明一律暂停') && !presetPrefix.includes('打赏'));
 chk('第 21 条里 ⑤ 的后半归成 ⑤之三', prefix.includes('⑤之三，第三、四步的说法要能落地') && !prefix.includes('⑤第三、四步的说法要能落地'));
-chk('问诊轮不许写正文那句摘出末尾声明', prefix.includes('末尾两行声明照常写；打赏区由插件加，不用你写'));
+chk('问诊轮不许写正文那句摘出末尾声明', prefix.includes('末尾两行声明照常写）'));
 
 chk('前说后说只留一条', (prefix.split('前说后说必须对得上').length - 1) === 1);
 chk('24.1 紧跟第 24 条', (() => {
