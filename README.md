@@ -90,11 +90,9 @@
 
 这两行之后，**凡是给了分析的回答**末尾都由插件接上打赏区——正常那份以「**结论**」开头，「脉证不全」降级成「**方向**」的那份也算；只问问题的问诊轮、代病人转话的回合不出现收款码。提示词里一个字都不提打赏，模型不写、也不许写，这段完全由代码补。两张收款码（支付宝、微信），图片由插件自己的通道从本地发出，同源显示，不挂外链、不上传任何东西。打赏全凭自愿，跟辨证结论、方子好坏都没关系，不打赏也照常把话讲完。
 
-打赏区长这样（插件里用的是本机通道地址，这里放仓库里的原图）：
+打赏区长这样（左边支付宝、右边微信；插件里用的是本机通道地址，这里是仓库里的原图）：
 
-<img src="https://raw.githubusercontent.com/yeweiliang7063/dsh-tcm-xueli/master/assets/dashang/alipay.jpg" alt="支付宝打赏码" width="240">
-
-<img src="https://raw.githubusercontent.com/yeweiliang7063/dsh-tcm-xueli/master/assets/dashang/wechat.jpg" alt="微信打赏码" width="240">
+<img src="https://raw.githubusercontent.com/yeweiliang7063/dsh-tcm-xueli/master/assets/dashang/dashang-pair.png" alt="支付宝与微信打赏码（左右并排）" width="520">
 
 ## 技术上怎么实现的
 
@@ -142,7 +140,7 @@
 
 ## 安装（给没用过的人看）
 
-> **先说一句**：npm 上同名包（`dsh-tcm-xueli`）就是本插件，已发布 3.2.9 版（<https://www.npmjs.com/package/dsh-tcm-xueli>）。但插件不是装进用户目录就能用，还要在 DSH 的 profile 里登记，所以下面两种方式更省事：解压文件夹装，或命令行装。
+> **先说一句**：npm 上同名包（`dsh-tcm-xueli`）就是本插件，已发布 3.2.10 版（<https://www.npmjs.com/package/dsh-tcm-xueli>）。但插件不是装进用户目录就能用，还要在 DSH 的 profile 里登记，所以下面两种方式更省事：解压文件夹装，或命令行装。
 
 **先决条件**：本机装好 DSH 桌面版。不用另装 Node、Python 或任何东西，DSH 自带。
 
@@ -205,7 +203,7 @@ node install.mjs
 |---|---|
 | 资料库 | **没有默认目录**，路径由你在「设置 → 中医 · 经方」里自己填。没填之前插件什么都不做：不建索引、不归档、不补随包经典；此时回答只会给治法方向，不引书、不报方名 |
 | 怎么卸 | 在 DSH 里把 `dsh-tcm-xueli` 这个插件关掉或卸载即可，不影响 DSH 其它功能。**源码文件夹不会被删，随时能再装回来** |
-| npm 上那个同名包 | 就是本插件，已发布 3.2.9（<https://www.npmjs.com/package/dsh-tcm-xueli>）；装法仍按上面的解压或命令行方式，装完才会登记进 DSH |
+| npm 上那个同名包 | 就是本插件，已发布 3.2.10（<https://www.npmjs.com/package/dsh-tcm-xueli>）；装法仍按上面的解压或命令行方式，装完才会登记进 DSH |
 
 ### 安装脚本做了什么（给想确认的人）
 
