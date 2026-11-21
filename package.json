@@ -42,7 +42,7 @@
     "index": "node lib/build-index.mjs",
     "verify": "node verify-preset.mjs",
     "setup": "node install.mjs",
-    "test": "node --test test/platform.test.mjs test/kb-index.test.mjs test/corpus.test.mjs test/records.test.mjs test/book-text.test.mjs test/book-classify.test.mjs test/auto-file.test.mjs test/gear.test.mjs test/preset-scope.test.mjs test/stream.test.mjs test/season.test.mjs test/wuyun.test.mjs test/package.test.mjs test/client.test.mjs test/search.test.mjs test/search-route.test.mjs test/clinic.test.mjs test/dashang.test.mjs test/kb-root.test.mjs"
+    "test": "node --test test/platform.test.mjs test/kb-index.test.mjs test/corpus.test.mjs test/records.test.mjs test/book-text.test.mjs test/book-classify.test.mjs test/auto-file.test.mjs test/gear.test.mjs test/preset-scope.test.mjs test/stream.test.mjs test/season.test.mjs test/wuyun.test.mjs test/package.test.mjs test/client.test.mjs test/search.test.mjs test/search-route.test.mjs test/clinic.test.mjs test/dashang.test.mjs test/kb-root.test.mjs test/sim-think.test.mjs"
   },
   "dependencies": {
     "@deepseek-ai/schemastery": "^3.19.0",

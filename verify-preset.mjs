@@ -235,6 +235,8 @@ chk('两版工具不许串（学习版侧）', fs.readFileSync(path.join(PLUGIN,
 chk('全量版会话里学习版规则不生效', fs.readFileSync(path.join(PLUGIN, 'lib', 'index.js'), 'utf8').includes("versionOf(ctx, options?.sessionId) === 'full'"));
 chk('识版导出 versionOf', fs.readFileSync(path.join(PLUGIN, 'lib', 'preset-scope.js'), 'utf8').includes('export function versionOf'));
 chk('资料库根目录由代码锁定', fs.existsSync(path.join(PLUGIN, 'lib', 'kb-root.js')) && fs.readFileSync(path.join(PLUGIN, 'lib', 'kb-index.js'), 'utf8').includes('childOf(root, INDEX_FILE)') && fs.readFileSync(path.join(PLUGIN, 'lib', 'records.js'), 'utf8').includes('insideRoot(kb, dir)'));
+chk('开局关掉思考、交卷再给回裁判', (() => { const think = fs.readFileSync(path.join(PLUGIN, 'lib', 'sim-think.js'), 'utf8'); const index = fs.readFileSync(path.join(PLUGIN, 'lib', 'index.js'), 'utf8'); return think.includes("'【模拟问诊 · 开局】'") && think.includes("['off', 'minimal', 'low']") && think.includes('createSimThinker') && index.includes('createSimThinker(ctx, { versionOf })'); })());
+chk('这一局的病人子会话也关思考', (() => { const think = fs.readFileSync(path.join(PLUGIN, 'lib', 'sim-think.js'), 'utf8'); return think.includes('simSessions.has(parent)') && think.includes('subagent'); })());
 chk('不再按文件夹名字认库', !fs.readFileSync(path.join(PLUGIN, 'lib', 'client.js'), 'utf8').includes('KB_DIR_NAME'));
 chk('各处提醒使用新的设置项名称', prefix.includes('设置 → 中医 · 经方（学习版）｜资料库目录') && !prefix.includes('中医 · 经方｜'));
 chk('首次使用提醒写清「第一次用」与「点保存」', indexSrc.includes('这是第一次用') && indexSrc.includes('再点保存'));
@@ -288,7 +290,7 @@ try {
 note(`node_modules/${MOD} 指向当前插件目录`, sameTarget, INSTALLED);
 
 // ---------- 8. 副本一致性 ----------
-const files = ['package.json', 'cordis.patch.yml', 'lib/index.js', 'lib/gear.js', 'lib/dosage-guard.js', 'lib/preset.js', 'lib/client.js', 'lib/kb-index.js', 'lib/platform.js', 'lib/corpus.js', 'lib/records.js', 'lib/book-text.js', 'lib/book-classify.js', 'lib/auto-file.js', 'lib/clinic.js', 'lib/search.js', 'lib/preset-scope.js', 'lib/season.js', 'lib/dashang.js', 'lib/kb-root.js', 'lib/build-index.mjs'];
+const files = ['package.json', 'cordis.patch.yml', 'lib/index.js', 'lib/gear.js', 'lib/dosage-guard.js', 'lib/preset.js', 'lib/client.js', 'lib/kb-index.js', 'lib/platform.js', 'lib/corpus.js', 'lib/records.js', 'lib/book-text.js', 'lib/book-classify.js', 'lib/auto-file.js', 'lib/clinic.js', 'lib/search.js', 'lib/preset-scope.js', 'lib/season.js', 'lib/dashang.js', 'lib/kb-root.js', 'lib/sim-think.js', 'lib/build-index.mjs'];
 // 从 npm/git 装的副本会被 git 换成 CRLF，源目录是 LF；比内容不比行尾
 const md5 = (p) => createHash('md5').update(fs.readFileSync(p, 'utf8').replaceAll(String.fromCharCode(13) + String.fromCharCode(10), String.fromCharCode(10))).digest('hex');
 let diff = 0;
