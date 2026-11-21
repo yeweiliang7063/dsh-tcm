@@ -159,3 +159,24 @@ test('问句与答卷的分界：带问号的算问，陈述/给方给穴算答�
   assert.equal(isQuestion('就这样吧'), false)
   assert.equal(isQuestion('交卷'), false)
 })
+
+test('模型冒充医生发的旁白不算交卷，不会自己把思考打开', async () => {
+  const agent = fakeAgent('deepseek', 'deepseek-v4', 'high')
+  const ctx = fakeCtx(agent, ['off', 'high'])
+  const { thinker } = createSimThinker(ctx, { versionOf: () => 'xueli' })
+  const session = { id: 's-20' }
+
+  thinker(session, open('【模拟问诊 · 开局】普通｜方药｜20260101-20'))
+  await tick()
+  assert.equal(agent.model.current().reasoningEffort, 'off')
+
+  // 冒号后一句陈述、没有问号——以前会被当成交卷
+  thinker(session, open('病人已经把袖子挽好了，你现在可以切脉。'))
+  assert.equal(agent.model.current().reasoningEffort, 'off', '旁白不是医生的答卷')
+  thinker(session, open('您把舌头上翘一下'))
+  assert.equal(agent.model.current().reasoningEffort, 'off', '带「您」的是模型自称，不算')
+
+  // 医生真交卷：不是问句，照样还原
+  thinker(session, open('证型：少阳太阴合病。治法：温补脾肾。'))
+  assert.equal(agent.model.current().reasoningEffort, 'high')
+})
