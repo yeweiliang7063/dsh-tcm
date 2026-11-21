@@ -38,7 +38,7 @@ function fakeCtx(agent, accepts) {
   }
 }
 
-const open = (text) => ({ type: 'user/message', data: { source: { kind: 'user' }, content: [{ type: 'text', text }] } })
+const open = (text) => ({ type: 'user/message', data: { content: [{ type: 'text', text }] } })
 const tick = () => new Promise((resolve) => setTimeout(resolve, 5))
 
 test('开局把这一局的思考关掉，交卷再调回原档', async () => {
@@ -51,9 +51,9 @@ test('开局把这一局的思考关掉，交卷再调回原档', async () => {
   await tick()
   assert.equal(agent.model.current().reasoningEffort, 'off', '开局先关思考')
 
+  // 交卷与裁判的思考是同一个回合：必须当场还原，不能等异步。
   thinker(session, open('交卷'))
-  await tick()
-  assert.equal(agent.model.current().reasoningEffort, 'medium', '交卷后回到原来的档位')
+  assert.equal(agent.model.current().reasoningEffort, 'medium', '交卷当场就回到原来的档位')
 })
 
 test('模型不认 off 就往下降一档，不硬塞', async () => {
@@ -96,4 +96,18 @@ test('这一局的病人子会话也关思考，别局的子会话不管', async
   made.child({ id: 'patient-2', origin: 'subagent', header: { parentSession: 'normal-chat' } })
   await tick()
   assert.equal(other.model.current().reasoningEffort, 'high', '别局的子会话不许动')
+})
+
+test('消息没带 source 也认，交卷带个句号也认', async () => {
+  const agent = fakeAgent('deepseek', 'deepseek-v4', 'high')
+  const ctx = fakeCtx(agent, ['off', 'high'])
+  const { thinker } = createSimThinker(ctx, { versionOf: () => 'xueli' })
+  const session = { id: 's-9' }
+
+  thinker(session, { type: 'user/message', data: { content: '【模拟问诊 · 开局】简单｜方药｜20260101-9' } })
+  await tick()
+  assert.equal(agent.model.current().reasoningEffort, 'off')
+
+  thinker(session, { type: 'user/message', data: { content: [{ type: 'text', text: '交卷。' }] } })
+  assert.equal(agent.model.current().reasoningEffort, 'high', '不能因为多了个标点就不还原')
 })
