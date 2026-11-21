@@ -160,6 +160,7 @@ chk('每局现抽病机、不许和最近几局撞车', presetPrefix.includes('�
 chk('转话时心里的方名条文不许写进面板', presetPrefix.includes('一个字都不许写进面板'));
 chk('答题期间模型不许自己发旁白', presetPrefix.includes('答题期间你不许自己发话') && presetPrefix.includes('不许写「病人已经把袖子挽好了'));
 chk('提示词也只认「交卷」两个字', presetPrefix.includes('只有医生明确说「交卷」') && presetPrefix.includes('③是「交卷」——才切裁判'));
+chk('开局只看「模拟问诊」开头、交卷只看两个字', (() => { const f = fs.readFileSync('lib/sim-think.js', 'utf8'); return f.includes('const OPEN_MARK = /^') && f.includes('模拟问诊/u') && f.includes("return String(said || '').includes(HAND_IN)") })());
 chk('答题期间病人和裁判都不许插话', presetPrefix.includes('【答题期间病人和裁判都不许插话】') && presetPrefix.includes('是在答题（陈述症状、讲病机、写治法方药、取穴、整段分析）') && presetPrefix.includes('病人不许自己开口，裁判不许提前点评'));
 chk('只有医生打「交卷」才切点评（不再按内容猜）', (() => { const think = fs.readFileSync(path.join(PLUGIN, 'lib', 'sim-think.js'), 'utf8'); return think.includes('function wantsHandIn(said)') && think.includes('if (!wantsHandIn(said))') && !think.includes('isQuestion'); })());
 chk('调档只管模拟问诊这一局，普通聊天不碰', (() => { const think = fs.readFileSync(path.join(PLUGIN, 'lib', 'sim-think.js'), 'utf8');

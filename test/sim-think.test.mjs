@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { createSimThinker, wantsHandIn } from '../lib/sim-think.js'
+import { createSimThinker, simQuiet } from '../lib/sim-think.js'
 
 /** 一个假的 agent：记着当前选择，select 时照着改。 */
 function fakeAgent(provider, model, effort) {
@@ -136,4 +136,35 @@ test('只管模拟问诊这一局：普通聊天、没开局的会话一个字�
   settled({ id: 'sim-1' }, { type: 'assistant/message' })
   await tick()
   assert.equal(agent.model.current().reasoningEffort, 'high', '交完卷就不再管')
+})
+
+test('被系统通知叫醒的一轮要闭嘴，医生的下一句再说', () => {
+  const agent = fakeAgent('deepseek', 'deepseek-v4', 'medium')
+  const ctx = fakeCtx(agent, ['off', 'minimal', 'low', 'medium'])
+  const { thinker } = createSimThinker(ctx, { versionOf: () => 'xueli' })
+  const session = { id: 'sim-quiet' }
+  const said = (text, kind) => ({ type: 'user/message', data: { source: { kind }, content: [{ type: 'text', text }] } })
+
+  thinker(session, said('【模拟问诊 · 开局】简单｜方药｜20261121-180000', 'user'))
+  assert.equal(simQuiet('sim-quiet'), false)
+  thinker(session, said('子智能体已完成任务', 'subagent-settled'))
+  assert.equal(simQuiet('sim-quiet'), true, '被通知叫醒的一轮要闭嘴')
+  thinker(session, said('请问口渴不渴？', 'user'))
+  assert.equal(simQuiet('sim-quiet'), false, '医生说话就恢复')
+  thinker(session, said('子智能体已完成任务', 'subagent-settled'))
+  thinker(session, said('交卷', 'user'))
+  assert.equal(simQuiet('sim-quiet'), false, '交卷之后不再管这一局')
+})
+
+test('开局那句话不看预设也认，只要有「交卷」两个字就算交卷', async () => {
+  const agent = fakeAgent('deepseek', 'deepseek-v4', 'medium')
+  const ctx = fakeCtx(agent, ['off', 'minimal', 'low', 'medium'])
+  const { thinker } = createSimThinker(ctx, { versionOf: () => '' })
+  const session = { id: 'sim-no-preset' }
+
+  thinker(session, open('【模拟问诊 · 开局】困难｜针药｜20261121-1'))
+  await tick()
+  assert.equal(agent.model.current().reasoningEffort, 'off', '预设还没挂上也要关思考')
+  thinker(session, open('这一局我看完了，交卷吧。'))
+  assert.equal(agent.model.current().reasoningEffort, 'medium', '只要带着交卷两个字就还原')
 })
