@@ -159,7 +159,8 @@ chk('病人第一句只讲难受，不许提方名药名', presetPrefix.includes
 chk('每局现抽病机、不许和最近几局撞车', presetPrefix.includes('【每局现抽，不许撞车】') && presetPrefix.includes('xueli_list_rounds'));
 chk('转话时心里的方名条文不许写进面板', presetPrefix.includes('一个字都不许写进面板'));
 chk('答题期间模型不许自己发旁白', presetPrefix.includes('答题期间你不许自己发话') && presetPrefix.includes('不许写「病人已经把袖子挽好了'));
-chk('模型冒充医生的话不算交卷', (() => { const think = fs.readFileSync(path.join(PLUGIN, 'lib', 'sim-think.js'), 'utf8'); return think.includes('FAKE_DOCTOR') && think.includes('if (FAKE_DOCTOR.test(said)) return'); })());
+chk('只有医生打「交卷」才切点评（不再按内容猜）', (() => { const think = fs.readFileSync(path.join(PLUGIN, 'lib', 'sim-think.js'), 'utf8'); return think.includes('function wantsHandIn(said)') && think.includes('if (!wantsHandIn(said))') && !think.includes('isQuestion'); })());
+chk('调档只管模拟问诊这一局，普通聊天不碰', (() => { const think = fs.readFileSync(path.join(PLUGIN, 'lib', 'sim-think.js'), 'utf8'); return think.includes('if (!simSessions.has(sessionId)) return') && think.includes('simSessions.delete(sessionId)'); })());
 chk('预设说明写明仅供学习研究', String(cfg.description).includes('仅供学习研究'));
 const rawPrefix = ((cfg.plugins || []).find((x) => x.id === 'persona') || {}).config?.prefix || '';
 chk('persona 提示词以常驻口径变量开头', rawPrefix.trimStart().startsWith('{{tcm_gear_guard}}'));

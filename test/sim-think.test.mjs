@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { createSimThinker, isQuestion } from '../lib/sim-think.js'
+import { createSimThinker, wantsHandIn } from '../lib/sim-think.js'
 
 /** 一个假的 agent：记着当前选择，select 时照着改。 */
 function fakeAgent(provider, model, effort) {
@@ -112,71 +112,28 @@ test('消息没带 source 也认，交卷带个句号也认', async () => {
   assert.equal(agent.model.current().reasoningEffort, 'high', '不能因为多了个标点就不还原')
 })
 
-test('医生答完题（没打「交卷」两个字）也算交卷：只认治法/方药，长问句不算', async () => {
+test('只管模拟问诊这一局：普通聊天、没开局的会话一个字都不动', async () => {
   const agent = fakeAgent('deepseek', 'deepseek-v4', 'high')
   const ctx = fakeCtx(agent, ['off', 'high'])
-  const { thinker } = createSimThinker(ctx, { versionOf: () => 'xueli' })
-  const session = { id: 's-10' }
+  const { thinker, settled } = createSimThinker(ctx, { versionOf: () => 'xueli' })
+  const chat = { id: 'plain-chat' }
 
-  thinker(session, open('【模拟问诊 · 开局】普通｜方药｜20260101-10'))
+  // 没开过局的会话：说什么都不动
+  thinker(chat, open('交卷'))
+  thinker(chat, open('治法当和解少阳'))
+  settled(chat, { type: 'assistant/message' })
+  await tick()
+  assert.equal(agent.model.current().reasoningEffort, 'high', '普通聊天不许被碰')
+
+  // 开了一局：照样管
+  thinker({ id: 'sim-1' }, open('【模拟问诊 · 开局】简单｜方药｜20260101-30'))
   await tick()
   assert.equal(agent.model.current().reasoningEffort, 'off')
 
-  // 中间的问句：不动
-  thinker(session, open('口苦吗？'))
-  assert.equal(agent.model.current().reasoningEffort, 'off', '问句不该提前开思考')
-
-  // 长问句/长描述，但没点治法方药：也不算交卷（不按字数判）
-  thinker(session, open('我想确认一下：这个人口苦、咽干、目眩、寒热往来，胸胁苦满，吃饭也少，这些是不是偏向少阳这一路？还要不要再问问大便和小便的情况？'))
-  assert.equal(agent.model.current().reasoningEffort, 'off', '长问句不许当成答完')
-
-  // 明确点了治法与主方：当场还原，让点评那份带思考
-  thinker(session, open('病位在少阳，寒热往来、口苦咽干目眩，治法当和解少阳。主方小柴胡汤：柴胡、黄芩、半夏、人参、甘草、生姜、大枣。'))
-  assert.equal(agent.model.current().reasoningEffort, 'high', '答完就还原，点评才有思考')
-
-  // 短句里点了治法/取穴也算
-  const second = fakeAgent('deepseek', 'deepseek-v4', 'medium')
-  const ctx2 = fakeCtx(second, ['off', 'medium'])
-  const made = createSimThinker(ctx2, { versionOf: () => 'xueli' })
-  made.thinker({ id: 's-11' }, open('【模拟问诊 · 开局】简单｜针灸｜20260101-11'))
-  await tick()
-  made.thinker({ id: 's-11' }, open('取穴：内关、足三里。'))
-  assert.equal(second.model.current().reasoningEffort, 'medium', '点了取穴也要还原')
-})
-
-test('问句与答卷的分界：带问号的算问，陈述/给方给穴算答卷', () => {
-  // 问诊
-  assert.equal(isQuestion('口苦吗？'), true)
-  assert.equal(isQuestion('大便几天一次?'), true)
-  assert.equal(isQuestion('平时怕冷还是怕热'), true, '「还是」不硬判，保守当问句也行')
-  assert.equal(isQuestion('嘴里苦不苦呢'), true)
-  assert.equal(isQuestion('请问平时睡得怎么样'), true)
-  assert.equal(isQuestion('小便利不利索'), true, '「利不利」不在词表里，按短句默认算问句更稳妥')
-  // 答卷
-  assert.equal(isQuestion('这是少阳证'), false)
-  assert.equal(isQuestion('小柴胡汤。'), false)
-  assert.equal(isQuestion('取穴内关、足三里。'), false)
-  assert.equal(isQuestion('就这样吧'), false)
-  assert.equal(isQuestion('交卷'), false)
-})
-
-test('模型冒充医生发的旁白不算交卷，不会自己把思考打开', async () => {
-  const agent = fakeAgent('deepseek', 'deepseek-v4', 'high')
-  const ctx = fakeCtx(agent, ['off', 'high'])
-  const { thinker } = createSimThinker(ctx, { versionOf: () => 'xueli' })
-  const session = { id: 's-20' }
-
-  thinker(session, open('【模拟问诊 · 开局】普通｜方药｜20260101-20'))
-  await tick()
-  assert.equal(agent.model.current().reasoningEffort, 'off')
-
-  // 冒号后一句陈述、没有问号——以前会被当成交卷
-  thinker(session, open('病人已经把袖子挽好了，你现在可以切脉。'))
-  assert.equal(agent.model.current().reasoningEffort, 'off', '旁白不是医生的答卷')
-  thinker(session, open('您把舌头上翘一下'))
-  assert.equal(agent.model.current().reasoningEffort, 'off', '带「您」的是模型自称，不算')
-
-  // 医生真交卷：不是问句，照样还原
-  thinker(session, open('证型：少阳太阴合病。治法：温补脾肾。'))
+  // 交完卷这一局就结束了，之后再聊不再动它
+  thinker({ id: 'sim-1' }, open('交卷'))
   assert.equal(agent.model.current().reasoningEffort, 'high')
+  settled({ id: 'sim-1' }, { type: 'assistant/message' })
+  await tick()
+  assert.equal(agent.model.current().reasoningEffort, 'high', '交完卷就不再管')
 })
